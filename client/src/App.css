@@ -1,0 +1,265 @@
+/* ================= GLOBAL ================= */
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e3a8a, #0ea5e9);
+  color: #f1f5f9;
+
+  /* ✅ stop horizontal scroll */
+  overflow-x: hidden;
+}
+
+/* ================= LAYOUT ================= */
+.container {
+  width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+/* Card */
+.card {
+  width: 100%;
+  max-width: 100%;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px);
+  padding: 22px;
+  border-radius: 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+}
+
+/* headings spacing */
+h2 {
+  margin: 0 0 12px;
+}
+
+/* Links */
+a {
+  text-decoration: none;
+  color: #facc15;
+  font-weight: 700;
+}
+a:hover { color: white; }
+
+/* Inputs */
+.input, .select, .textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  outline: none;
+  font-size: 15px;
+  background: #1e293b;
+  color: white;
+}
+
+.input::placeholder, .textarea::placeholder {
+  color: #94a3b8;
+}
+
+.textarea {
+  min-height: 100px;
+  resize: none;
+}
+
+/* Buttons */
+.btn {
+  padding: 13px 16px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 15px;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  color: white;
+  transition: 0.2s ease;
+  white-space: nowrap;
+}
+.btn:hover { transform: translateY(-2px); opacity: 0.95; }
+.btn.secondary { background: linear-gradient(90deg, #f43f5e, #be123c); }
+
+/* Badge */
+.badge {
+  background: rgba(255, 255, 255, 0.16);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+
+/* ================= WELCOME (SMALL) ================= */
+.welcomeCard {
+  padding: 14px 18px !important;   /* ✅ smaller height */
+}
+
+.welcomeCard h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.welcomeCard p {
+  margin: 6px 0 0;
+  opacity: 0.9;
+}
+
+/* links that look like buttons */
+.btnLink {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  color: white;
+}
+.btnLink:hover { opacity: 0.95; }
+
+.btnLink.secondary {
+  background: linear-gradient(90deg, #f43f5e, #be123c);
+}
+
+/* ================= SEARCH ROW ================= */
+.searchRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 10px 0 14px;
+}
+
+/* ================= PET GRID (4 COLUMNS) ================= */
+.petGrid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.petCard {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px;
+  padding: 12px;
+  transition: 0.2s ease;
+  overflow: hidden;
+}
+.petCard:hover {
+  background: rgba(255, 255, 255, 0.10);
+  transform: translateY(-2px);
+}
+
+.petImg {
+  width: 100%;
+  height: 200px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.petTitle {
+  margin-top: 10px;
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.petMeta {
+  opacity: 0.86;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.petStatus {
+  opacity: 0.7;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width: 1300px) {
+  .petGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 980px) {
+  .petGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 650px) {
+  .container { padding: 14px; }
+  .card { padding: 16px; }
+  .petGrid { grid-template-columns: 1fr; }
+  .petImg { height: 190px; }
+}
+
+/* make navbar search look nice */
+.card input.input {
+  max-width: 520px;
+}
+
+
+/* ===== NAVBAR LAYOUT ===== */
+.navbarTop{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:nowrap;      /* ✅ keeps one line */
+}
+
+.navLinks{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:nowrap;
+  white-space:nowrap;
+}
+
+/* ✅ Search + Category + Sort in one line */
+.navSearchLine{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex: 1;
+  justify-content:center;
+  flex-wrap:nowrap;      /* ✅ keeps one line */
+  min-width: 520px;      /* helps keep it on one line */
+}
+
+.navSearchLine .input{
+  width: 360px;          /* search width */
+  min-width: 240px;
+}
+
+.navSearchLine .select{
+  width: 180px;
+  min-width: 180px;
+}
+
+.navRight{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:nowrap;
+  white-space:nowrap;
+}
+
+/* Welcome text under navbar */
+.navWelcome{
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+/* Responsive: allow wrapping on smaller screens */
+@media (max-width: 1100px){
+  .navbarTop{ flex-wrap:wrap; }
+  .navSearchLine{ flex-wrap:wrap; min-width: 100%; justify-content:flex-start; }
+  .navSearchLine .input{ width: 100%; }
+  .navSearchLine .select{ width: 220px; }
+}
