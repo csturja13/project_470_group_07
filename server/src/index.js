@@ -9,7 +9,12 @@ const { connectDB } = require("./config/db");
 const petRoutes = require("./routes/petRoutes");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+
+const documentRoutes = require("./routes/documentroutes");
+
 const app = express();
+
+
 
 app.use(express.json());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
@@ -24,6 +29,8 @@ app.get("/", (req, res) => {
 
 app.use("/api/pets", petRoutes);
 app.use("/api/auth", authRoutes);
+
+app.use("/api/documents", documentRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
