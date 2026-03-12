@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-do
 import "./App.css";
 import { api, setAuthToken } from "./api";
 
+import DocumentsPage from "./components/DocumentsPage";
+
 /* ================= AUTH HELPERS ================= */
 
 function saveAuth(token, user) {
@@ -43,6 +45,7 @@ function Navbar({
           {!user && <Link to="/signup">Signup</Link>}
           {!user && <Link to="/login">Login</Link>}
           {user && <Link to="/profile">Profile</Link>}
+          {user && <Link to="/documents">Documents</Link>}
         </div>
 
         {/* Middle: Search + Category + Sort (ONE LINE) */}
@@ -561,6 +564,7 @@ export default function App() {
           <Route path="/signup" element={<Signup onAuth={onAuth} />} />
           <Route path="/login" element={<Login onAuth={onAuth} />} />
           <Route path="/profile" element={<Profile user={user} />} />
+          <Route path="/documents" element={<DocumentsPage user={user} />} />
           <Route path="/admin" element={<AdminPanel user={user} />} />
         </Routes>
       </div>
