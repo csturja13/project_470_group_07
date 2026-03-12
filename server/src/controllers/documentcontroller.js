@@ -1,4 +1,4 @@
-const Document = require("../models/documentation");
+const Document = require("../models/Document");
 const Pet = require("../models/Pet");
 
 // POST /api/documents
