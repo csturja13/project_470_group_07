@@ -34,7 +34,6 @@ function Navbar({
   return (
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="navbarTop">
-        {/* Left: Brand + Links */}
         <div className="navLinks">
           <div style={{ fontSize: 22 }}>🐾</div>
           <b style={{ fontSize: 25 }}>Pawlytics</b>
@@ -48,7 +47,6 @@ function Navbar({
           {user && <Link to="/documents">Documents</Link>}
         </div>
 
-        {/* Middle: Search + Category + Sort (ONE LINE) */}
         <div className="navSearchLine">
           <input
             className="input"
@@ -79,7 +77,6 @@ function Navbar({
           </select>
         </div>
 
-        {/* Right: user badge + logout */}
         <div className="navRight">
           {user ? (
             <>
@@ -96,7 +93,6 @@ function Navbar({
         </div>
       </div>
 
-      {/* ✅ Welcome strip UNDER the top bar */}
       {!user && (
         <div className="navWelcome">
           Welcome to Pawlytics 🐾 <span style={{ opacity: 0.85 }}>Signup/Login to create pet posts.</span>
@@ -111,7 +107,6 @@ function Navbar({
 function Home({ user, pets, loading, error, onRefresh }) {
   return (
     <div>
-      {/* Feed first */}
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <h2 style={{ margin: 0 }}>Pet Feed</h2>
@@ -144,7 +139,9 @@ function Home({ user, pets, loading, error, onRefresh }) {
                 {p.name} — {p.species}
               </div>
 
-              <div className="petMeta">Age: {p.age} • Price: {p.price}</div>
+              <div className="petMeta">
+                Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
+              </div>
               <div className="petMeta">{p.description}</div>
 
               <div className="petStatus">Status: {p.approvalStatus}</div>
@@ -155,17 +152,14 @@ function Home({ user, pets, loading, error, onRefresh }) {
         {!loading && !pets.length && <div style={{ marginTop: 10, opacity: 0.8 }}>No pets found.</div>}
       </div>
 
-     
       {!user && (
         <div className="card welcomeCard">
-          
           <p style={{ margin: "10px 0 0", opacity: 0.9 }}>
             Created by CAPA (2026)
           </p>
         </div>
       )}
 
-      {/* Create post (only logged in) */}
       {user && (
         <CreatePet user={user} onCreated={onRefresh} />
       )}
@@ -180,8 +174,9 @@ function CreatePet({ user, onCreated }) {
   const [form, setForm] = useState({
     name: "",
     species: "Dog",
-    age: 1,
-    price: 0,
+    sex: "Male",
+    age: "",
+    price: "",
     description: ""
   });
 
@@ -191,8 +186,9 @@ function CreatePet({ user, onCreated }) {
     const data = new FormData();
     data.append("name", form.name);
     data.append("species", form.species);
-    data.append("age", String(form.age));
-    data.append("price", String(form.price));
+    data.append("sex", form.sex);
+    data.append("age", form.age === "" ? "" : String(form.age));
+    data.append("price", form.price === "" ? "" : String(form.price));
     data.append("description", form.description);
     if (imageFile) data.append("image", imageFile);
 
@@ -200,7 +196,14 @@ function CreatePet({ user, onCreated }) {
       headers: { "Content-Type": "multipart/form-data" }
     });
 
-    setForm({ name: "", species: "Dog", age: 1, price: 0, description: "" });
+    setForm({
+      name: "",
+      species: "Dog",
+      sex: "Male",
+      age: "",
+      price: "",
+      description: ""
+    });
     setImageFile(null);
 
     const fileInput = document.getElementById("petImageInput");
@@ -213,43 +216,58 @@ function CreatePet({ user, onCreated }) {
     <div className="card">
       <h2 style={{ marginTop: 0 }}>Create Pet Post</h2>
 
-      <form onSubmit={submitPet} style={{ display: "grid", gap: 10 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-          <input
-            className="input"
-            placeholder="Pet name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            required
-          />
-          <select
-            className="select"
-            value={form.species}
-            onChange={(e) => setForm({ ...form, species: e.target.value })}
-          >
-            <option value="Dog">Dog</option>
-            <option value="Cat">Cat</option>
-            <option value="Bird">Bird</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
+      <form
+  onSubmit={submitPet}
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+    maxWidth: 500
+  }}
+>
+        <input
+          className="input"
+          placeholder="Pet name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          required
+        />
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-          <input
-            className="input"
-            type="number"
-            placeholder="Age"
-            value={form.age}
-            onChange={(e) => setForm({ ...form, age: Number(e.target.value) })}
-          />
-          <input
-            className="input"
-            type="number"
-            placeholder="Price"
-            value={form.price}
-            onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-          />
-        </div>
+        <select
+          className="select"
+          value={form.species}
+          onChange={(e) => setForm({ ...form, species: e.target.value })}
+        >
+          <option value="Dog">Dog</option>
+          <option value="Cat">Cat</option>
+          <option value="Bird">Bird</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <select
+          className="select"
+          value={form.sex}
+          onChange={(e) => setForm({ ...form, sex: e.target.value })}
+        >
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+
+        <input
+          className="input"
+          type="number"
+          placeholder="Age"
+          value={form.age}
+          onChange={(e) => setForm({ ...form, age: e.target.value })}
+        />
+
+        <input
+          className="input"
+          type="number"
+          placeholder="Price"
+          value={form.price}
+          onChange={(e) => setForm({ ...form, price: e.target.value })}
+        />
 
         <input
           id="petImageInput"
@@ -449,7 +467,9 @@ function AdminPanel({ user }) {
 
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 900, fontSize: 18 }}>{p.name} — {p.species}</div>
-            <div style={{ opacity: 0.85 }}>Age: {p.age} • Price: {p.price}</div>
+            <div style={{ opacity: 0.85 }}>
+              Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
+            </div>
             <div style={{ opacity: 0.9 }}>{p.description}</div>
             <div style={{ opacity: 0.7, fontSize: 13 }}>Status: {p.approvalStatus}</div>
 
@@ -473,12 +493,10 @@ export default function App() {
     return raw ? JSON.parse(raw) : null;
   });
 
-  // Navbar filters
   const [searchText, setSearchText] = useState("");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
 
-  // pets data
   const [petsRaw, setPetsRaw] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -503,19 +521,16 @@ export default function App() {
     }
   }
 
-  // initial load
   useEffect(() => {
     loadPets();
     // eslint-disable-next-line
   }, []);
 
-  // ✅ auto-filter when category changes
   useEffect(() => {
     loadPets();
     // eslint-disable-next-line
   }, [category]);
 
-  // ✅ sorted view (frontend)
   const pets = useMemo(() => {
     const arr = [...petsRaw];
     if (sort === "price_asc") arr.sort((a, b) => (a.price || 0) - (b.price || 0));

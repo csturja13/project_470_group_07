@@ -3,7 +3,7 @@ const Pet = require("../models/Pet");
 // Create pet post
 async function createPet(req, res) {
   try {
-    const { name, species, age, price, description } = req.body;
+    const { name, species, sex, age, price, description } = req.body;
 
     if (!name || !species) {
       return res.status(400).json({ message: "name and species required" });
@@ -14,6 +14,7 @@ async function createPet(req, res) {
     const pet = await Pet.create({
       name,
       species,
+      sex,
       age: Number(age || 0),
       price: Number(price || 0),
       description: description || "",
