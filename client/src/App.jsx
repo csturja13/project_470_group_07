@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from "react-router-dom";
 import "./App.css";
 import { api, setAuthToken } from "./api";
 
@@ -124,29 +124,33 @@ function Home({ user, pets, loading, error, onRefresh }) {
 
         <div className="petGrid" style={{ marginTop: 14 }}>
           {pets.map((p) => (
-            <div className="petCard" key={p._id}>
-              <img
-                className="petImg"
-                src={
-                  p.imagePath
-                    ? `http://localhost:5000${p.imagePath}`
-                    : "https://placehold.co/600x400?text=Pet"
-                }
-                alt={p.name}
-              />
+        <div className="petCard" key={p._id}>
+          <img
+            className="petImg"
+            src={
+              p.imagePath
+                ? `http://localhost:5000${p.imagePath}`
+                : "https://placehold.co/600x400?text=Pet"
+            }
+            alt={p.name}
+          />
 
-              <div className="petTitle">
-                {p.name} — {p.species}
-              </div>
+          <div className="petTitle">
+            {p.name} — {p.species}
+          </div>
 
-              <div className="petMeta">
-                Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
-              </div>
-              <div className="petMeta">{p.description}</div>
+          <div className="petMeta">Age: {p.age} • Price: {p.price}</div>
+          <div className="petMeta">{p.description}</div>
 
-              <div className="petStatus">Status: {p.approvalStatus}</div>
-            </div>
-          ))}
+          <div className="petStatus">Status: {p.approvalStatus}</div>
+
+          <div style={{ marginTop: 10 }}>
+            <Link to={`/pets/${p._id}`}>
+              <button className="btn">View Details</button>
+            </Link>
+          </div>
+        </div>
+        ))}
         </div>
 
         {!loading && !pets.length && <div style={{ marginTop: 10, opacity: 0.8 }}>No pets found.</div>}
@@ -290,6 +294,69 @@ function CreatePet({ user, onCreated }) {
       <div style={{ marginTop: 8, opacity: 0.75, fontSize: 13 }}>
         Posts are <b>Pending</b> until admin approves.
       </div>
+    </div>
+  );
+}
+
+/* ================= PET DETAILS ================= */
+function PetDetails() {
+  const { id } = useParams();
+  const [pet, setPet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    async function loadPet() {
+      setLoading(true);
+      setErr("");
+
+      try {
+        const res = await api.get(`/api/pets/${id}`);
+        setPet(res.data);
+      } catch (e) {
+        setErr(e?.response?.data?.message || "Failed to load pet details");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPet();
+  }, [id]);
+
+  if (loading) return <div className="card">Loading pet details...</div>;
+  if (err) return <div className="card">{err}</div>;
+  if (!pet) return <div className="card">Pet not found.</div>;
+
+  return (
+    <div className="card">
+      <h2>{pet.name} — {pet.species}</h2>
+
+      <img
+        src={
+          pet.imagePath
+            ? `http://localhost:5000${pet.imagePath}`
+            : "https://placehold.co/600x400?text=Pet"
+        }
+        alt={pet.name}
+        style={{
+          width: "100%",
+          maxWidth: 500,
+          borderRadius: 14,
+          objectFit: "cover",
+          marginBottom: 14
+        }}
+      />
+
+      <div><b>Age:</b> {pet.age}</div>
+      <div><b>Price:</b> {pet.price}</div>
+      <div><b>Description:</b> {pet.description}</div>
+      <div><b>Status:</b> {pet.approvalStatus}</div>
+
+      <hr style={{ margin: "16px 0" }} />
+
+      <h3>Owner Information</h3>
+      <div><b>Name:</b> {pet.owner?.name || "Not available"}</div>
+      <div><b>Email:</b> {pet.owner?.email || "Not available"}</div>
     </div>
   );
 }
@@ -564,24 +631,25 @@ export default function App() {
         />
 
         <Routes>
-          <Route
-            path="/"
-            element={
-              <Home
-                user={user}
-                pets={pets}
-                loading={loading}
-                error={err}
-                onRefresh={loadPets}
-              />
-            }
-          />
-          <Route path="/signup" element={<Signup onAuth={onAuth} />} />
-          <Route path="/login" element={<Login onAuth={onAuth} />} />
-          <Route path="/profile" element={<Profile user={user} />} />
-          <Route path="/documents" element={<DocumentsPage user={user} />} />
-          <Route path="/admin" element={<AdminPanel user={user} />} />
-        </Routes>
+        <Route
+          path="/"
+          element={
+            <Home
+              user={user}
+              pets={pets}
+              loading={loading}
+              error={err}
+              onRefresh={loadPets}
+            />
+          }
+        />
+        <Route path="/signup" element={<Signup onAuth={onAuth} />} />
+        <Route path="/login" element={<Login onAuth={onAuth} />} />
+        <Route path="/profile" element={<Profile user={user} />} />
+        <Route path="/documents" element={<DocumentsPage user={user} />} />
+        <Route path="/admin" element={<AdminPanel user={user} />} />
+        <Route path="/pets/:id" element={<PetDetails />} />
+      </Routes>
       </div>
     </BrowserRouter>
   );

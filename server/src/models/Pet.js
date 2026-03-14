@@ -10,39 +10,17 @@ const petSchema = new mongoose.Schema(
       enum: ["Dog", "Cat", "Bird", "Other"]
     },
 
-    /* NEW FIELD */
-    sex: {
-      type: String,
-      enum: ["Male", "Female"],
-      default: "Male"
-    },
-
-    /* Age should not force 0 */
-    age: {
-      type: Number,
-      default: null
-    },
-
-    /* Price should not force 0 */
-    price: {
-      type: Number,
-      default: null
-    },
-
-    description: {
-      type: String,
-      default: ""
-    },
-
-    imagePath: {
-      type: String,
-      default: ""
-    },
-
     approvalStatus: {
       type: String,
       enum: ["Pending", "Approved", "Rejected"],
       default: "Pending"
+    },
+
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      //required: true
+      default: null
     }
   },
   { timestamps: true }

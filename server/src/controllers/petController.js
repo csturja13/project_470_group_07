@@ -19,7 +19,8 @@ async function createPet(req, res) {
       price: Number(price || 0),
       description: description || "",
       imagePath,
-      approvalStatus: "Pending"
+      approvalStatus: "Pending",
+      owner: req.user.userId
     });
 
     return res.status(201).json(pet);
@@ -28,6 +29,21 @@ async function createPet(req, res) {
   }
 }
 
+//get_pet_by_owner_ID
+
+async function getPetById(req, res) {
+  try {
+    const pet = await Pet.findById(req.params.id).populate("owner", "name email");
+
+    if (!pet) {
+      return res.status(404).json({ message: "Pet not found" });
+    }
+
+    return res.json(pet);
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
 
 // List pets with search + filter
 async function listPets(req, res) {
@@ -46,4 +62,4 @@ async function listPets(req, res) {
   }
 }
 
-module.exports = { createPet, listPets };
+module.exports = { createPet, listPets, getPetById };
