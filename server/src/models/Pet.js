@@ -10,7 +10,18 @@ const petSchema = new mongoose.Schema(
 
     imagePath: { type: String, default: "" },
 
-    approvalStatus: { type: String, enum: ["Pending", "Approved", "Rejected"], default: "Pending" }
+    approvalStatus: {
+      type: String,
+      enum: ["Pending", "Approved", "Rejected"],
+      default: "Pending"
+    },
+
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      //required: true
+      default: null
+    }
   },
   { timestamps: true }
 );
