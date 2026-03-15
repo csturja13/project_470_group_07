@@ -11,7 +11,7 @@ const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 
 const documentRoutes = require("./routes/documentroutes");
-
+const vaccinationCampaignRoutes = require("./routes/vaccinationCampaignRoutes");
 const app = express();
 
 
@@ -31,6 +31,8 @@ app.use("/api/pets", petRoutes);
 app.use("/api/auth", authRoutes);
 
 app.use("/api/documents", documentRoutes);
+app.use("/api/vaccination-campaigns", vaccinationCampaignRoutes);
+
 
 const server = http.createServer(app);
 const io = new Server(server, {
