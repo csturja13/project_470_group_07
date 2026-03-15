@@ -106,15 +106,59 @@ function Navbar({
   );
 }
 
+/*================= REUSABLE CARD ================= */
+
+function PetCard({ p }) {
+  return (
+    <div className="petCard" key={p._id}>
+      <img
+        className="petImg"
+        src={
+          p.imagePath
+            ? `http://localhost:5000${p.imagePath}`
+            : "https://placehold.co/600x400?text=Pet"
+        }
+        alt={p.name}
+      />
+
+      <div className="petTitle">
+        {p.name} — {p.species}
+      </div>
+
+      <div className="petMeta">
+        Sex: {p.sex || "Not specified"} • Age: {p.age || "Not specified"} • Price: {p.price || "Not specified"}
+      </div>
+
+      <div className="petMeta">{p.description}</div>
+      <div className="petStatus">Status: {p.approvalStatus}</div>
+
+      <div style={{ marginTop: 10 }}>
+        <Link to={`/pets/${p._id}`} className="btn">
+          View Details
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 /* ================= HOME (FEED FIRST) ================= */
 
 function Home({ user, pets, loading, error, onRefresh }) {
+  const myPets = user
+    ? pets.filter((p) => p.owner && p.owner._id === user._id)
+    : [];
+
+  const otherPets = user
+    ? pets.filter((p) => !p.owner || p.owner._id !== user._id)
+    : pets;
+
   return (
     <div>
-      {/* Feed first */}
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0 }}>Pet Feed</h2>
+          <h2 style={{ margin: 0 }}>
+            {user ? "Pet Feed" : "All Pet Posts"}
+          </h2>
           <button className="btn" type="button" onClick={onRefresh}>
             Refresh
           </button>
@@ -127,54 +171,52 @@ function Home({ user, pets, loading, error, onRefresh }) {
           </div>
         )}
 
-        <div className="petGrid" style={{ marginTop: 14 }}>
-          {pets.map((p) => (
-        <div className="petCard" key={p._id}>
-          <img
-            className="petImg"
-            src={
-              p.imagePath
-                ? `http://localhost:5000${p.imagePath}`
-                : "https://placehold.co/600x400?text=Pet"
-            }
-            alt={p.name}
-          />
+        {!loading && !error && !user && (
+          <>
+            <div className="petGrid" style={{ marginTop: 14 }}>
+              {pets.map((p) => (
+                <PetCard key={p._id} p={p} />
+              ))}
+            </div>
 
-          <div className="petTitle">
-            {p.name} — {p.species}
-          </div>
+            {!pets.length && <div style={{ marginTop: 10, opacity: 0.8 }}>No pets found.</div>}
+          </>
+        )}
 
-          <div className="petMeta">Age: {p.age} • Price: {p.price}</div>
-          <div className="petMeta">{p.description}</div>
+        {!loading && !error && user && (
+          <>
+            <h3 style={{ marginTop: 18 }}>My Pet Posts</h3>
+            <div className="petGrid" style={{ marginTop: 14 }}>
+              {myPets.map((p) => (
+                <PetCard key={p._id} p={p} />
+              ))}
+            </div>
+            {!myPets.length && (
+              <div style={{ marginTop: 10, opacity: 0.8 }}>You have not posted any pets yet.</div>
+            )}
 
-          <div className="petStatus">Status: {p.approvalStatus}</div>
-
-          <div style={{ marginTop: 10 }}>
-            <Link to={`/pets/${p._id}`}>
-              <button className="btn">View Details</button>
-            </Link>
-          </div>
-        </div>
-        ))}
-        </div>
-
-        {!loading && !pets.length && <div style={{ marginTop: 10, opacity: 0.8 }}>No pets found.</div>}
+            <h3 style={{ marginTop: 28 }}>Other Users' Pet Posts</h3>
+            <div className="petGrid" style={{ marginTop: 14 }}>
+              {otherPets.map((p) => (
+                <PetCard key={p._id} p={p} />
+              ))}
+            </div>
+            {!otherPets.length && (
+              <div style={{ marginTop: 10, opacity: 0.8 }}>No posts from other users found.</div>
+            )}
+          </>
+        )}
       </div>
 
-     
       {!user && (
         <div className="card welcomeCard">
-          
           <p style={{ margin: "10px 0 0", opacity: 0.9 }}>
             Created by CAPA (2026)
           </p>
         </div>
       )}
 
-      {/* Create post (only logged in) */}
-      {user && (
-        <CreatePet user={user} onCreated={onRefresh} />
-      )}
+      {user && <CreatePet user={user} onCreated={onRefresh} />}
     </div>
   );
 }

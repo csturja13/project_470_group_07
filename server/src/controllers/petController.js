@@ -28,8 +28,6 @@ async function createPet(req, res) {
   }
 }
 
-//get_pet_by_owner_ID
-
 async function getPetById(req, res) {
   try {
     const pet = await Pet.findById(req.params.id).populate("owner", "name email");
@@ -54,7 +52,10 @@ async function listPets(req, res) {
     if (q) filter.name = { $regex: q, $options: "i" };
     if (species) filter.species = species;
 
-    const pets = await Pet.find(filter).sort({ createdAt: -1 });
+    const pets = await Pet.find(filter)
+      .populate("owner", "name email")
+      .sort({ createdAt: -1 });
+
     return res.json(pets);
   } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });
