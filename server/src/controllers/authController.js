@@ -37,7 +37,7 @@ async function signup(req, res) {
 
     return res.status(201).json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });
@@ -59,7 +59,7 @@ async function login(req, res) {
 
     return res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
     });
   } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });
