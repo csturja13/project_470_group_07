@@ -4,6 +4,8 @@ import "./App.css";
 import { api, setAuthToken } from "./api";
 
 import DocumentsPage from "./components/DocumentsPage";
+import VaccinationCampaignsPage from "./components/VaccinationCampaignsPage";
+
 
 /* ================= AUTH HELPERS ================= */
 
