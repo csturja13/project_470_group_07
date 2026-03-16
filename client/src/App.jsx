@@ -170,7 +170,11 @@ function PetCard({ p }) {
       </div>
 
       <div className="petMeta">
-        Sex: {p.sex || "Not specified"} • Age: {p.age || "Not specified"} • Price: {p.price || "Not specified"}
+        Owner: {p.owner?.name || "Unknown"}
+      </div>
+
+      <div className="petMeta">
+        Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
       </div>
 
       <div className="petMeta">{p.description}</div>
@@ -183,7 +187,7 @@ function PetCard({ p }) {
       </div>
     </div>
   );
-}
+}  
 
 /* ================= HOME (FEED FIRST) ================= */
 function Home({ user, pets, loading, error, onRefresh }) {
@@ -202,9 +206,6 @@ function Home({ user, pets, loading, error, onRefresh }) {
           <h2 style={{ margin: 0 }}>
             {user ? "Pet Feed" : "All Pet Posts"}
           </h2>
-          <button className="btn" type="button" onClick={onRefresh}>
-            Refresh
-          </button>
         </div>
 
         {loading && <div style={{ marginTop: 12 }}>Loading pets…</div>}
@@ -942,15 +943,22 @@ function AdminPanel({ user }) {
     loadPending();
   }, []);
 
-  async function setStatus(id, status) {
-    await api.patch(`/api/admin/pets/${id}/status`, { status });
-    await loadPending();
+  async function approve(id) {
+    try {
+      await api.patch(`/api/admin/pets/${id}/approve`);
+      await loadPending();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to approve pet");
+    }
   }
 
-  async function remove(id) {
-    if (!window.confirm("Delete this post?")) return;
-    await api.delete(`/api/admin/pets/${id}`);
-    await loadPending();
+  async function reject(id) {
+    try {
+      await api.delete(`/api/admin/pets/${id}/reject`);
+      await loadPending();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to reject pet");
+    }
   }
 
   if (!user) return <div className="card">Please login as admin.</div>;
@@ -974,16 +982,28 @@ function AdminPanel({ user }) {
           style={{ marginTop: 15, display: "flex", gap: 15, alignItems: "center" }}
         >
           <img
-            src={p.imagePath ? `http://localhost:5000${p.imagePath}` : "https://placehold.co/240x180?text=Pet"}
+            src={
+              p.imagePath
+                ? `http://localhost:5000${p.imagePath}`
+                : "https://placehold.co/240x180?text=Pet"
+            }
             alt={p.name}
             style={{ width: 220, height: 160, objectFit: "cover", borderRadius: 14 }}
           />
 
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 900, fontSize: 18 }}>{p.name} — {p.species}</div>
+            <div style={{ fontWeight: 900, fontSize: 18 }}>
+              {p.name} — {p.species}
+            </div>
+
+            <div style={{ opacity: 0.85 }}>
+              Owner: {p.owner?.name || "Unknown"}
+            </div>
+
             <div style={{ opacity: 0.85 }}>
               Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
             </div>
+
             <div style={{ opacity: 0.9 }}>{p.description}</div>
 
             <div style={{ opacity: 0.7, fontSize: 13 }}>
@@ -991,9 +1011,8 @@ function AdminPanel({ user }) {
             </div>
 
             <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-              <button className="btn" onClick={() => setStatus(p._id, "Approved")}>Approve</button>
-              <button className="btn secondary" onClick={() => setStatus(p._id, "Rejected")}>Reject</button>
-              <button className="btn secondary" onClick={() => remove(p._id)}>Delete</button>
+              <button className="btn" onClick={() => approve(p._id)}>Approve</button>
+              <button className="btn secondary" onClick={() => reject(p._id)}>Reject</button>
             </div>
           </div>
         </div>
@@ -1001,7 +1020,6 @@ function AdminPanel({ user }) {
     </div>
   );
 }
-
 /* ================= MAIN APP ================= */
 export default function App() {
   const [user, setUser] = useState(() => {
@@ -1038,8 +1056,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    loadPets();
-  }, []);
+  loadPets();
+}, []);
 
   useEffect(() => {
     loadPets();
