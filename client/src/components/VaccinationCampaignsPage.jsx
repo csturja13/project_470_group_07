@@ -21,6 +21,7 @@ export default function VaccinationCampaignsPage({ user }) {
 
   async function loadCampaigns() {
     try {
+      setErr("");
       const res = await api.get("/api/vaccination-campaigns", {
         params: {
           status: filterStatus || undefined,
@@ -109,7 +110,7 @@ export default function VaccinationCampaignsPage({ user }) {
             Refresh
           </button>
         </div>
-      </div> 
+      </div>
 
       {user && user.role === "admin" && (
         <div className="card" style={{ marginTop: 16 }}>
@@ -210,4 +211,66 @@ export default function VaccinationCampaignsPage({ user }) {
           </form>
         </div>
       )}
-      
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>Campaign List</h2>
+
+        {!campaigns.length ? (
+          <div style={{ opacity: 0.8 }}>No vaccination campaigns found.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 12 }}>
+            {campaigns.map((campaign) => (
+              <div key={campaign._id} className="badge" style={{ padding: 14 }}>
+                <div style={{ fontWeight: 800, fontSize: 18 }}>{campaign.title}</div>
+
+                <div style={{ marginTop: 6 }}>{campaign.description}</div>
+
+                <div style={{ marginTop: 6 }}>
+                  <b>Species:</b> {campaign.targetSpecies}
+                </div>
+                <div>
+                  <b>Vaccine:</b> {campaign.vaccineName}
+                </div>
+                <div>
+                  <b>Location:</b> {campaign.location}
+                </div>
+                <div>
+                  <b>Organizer:</b> {campaign.organizer || "Not specified"}
+                </div>
+                <div>
+                  <b>Campaign Date:</b>{" "}
+                  {campaign.campaignDate
+                    ? new Date(campaign.campaignDate).toLocaleDateString()
+                    : "Not specified"}
+                </div>
+                <div>
+                  <b>Last Registration:</b>{" "}
+                  {campaign.lastRegistrationDate
+                    ? new Date(campaign.lastRegistrationDate).toLocaleDateString()
+                    : "Not specified"}
+                </div>
+                <div>
+                  <b>Available Slots:</b> {campaign.availableSlots}
+                </div>
+                <div>
+                  <b>Status:</b> {campaign.status}
+                </div>
+
+                {user && user.role === "admin" && (
+                  <div style={{ marginTop: 10 }}>
+                    <button
+                      className="btn secondary"
+                      onClick={() => removeCampaign(campaign._id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
