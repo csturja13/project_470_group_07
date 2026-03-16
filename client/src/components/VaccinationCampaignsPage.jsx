@@ -110,6 +110,104 @@ export default function VaccinationCampaignsPage({ user }) {
           </button>
         </div>
       </div> 
-    </div>
 
-  )}
+      {user && user.role === "admin" && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h2>Manage Vaccination Campaign</h2>
+
+          <form onSubmit={submit} style={{ display: "grid", gap: 10 }}>
+            <input
+              className="input"
+              placeholder="Campaign Title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              required
+            />
+
+            <textarea
+              className="textarea"
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+
+            <select
+              className="select"
+              value={form.targetSpecies}
+              onChange={(e) => setForm({ ...form, targetSpecies: e.target.value })}
+            >
+              <option value="All">All</option>
+              <option value="Dog">Dog</option>
+              <option value="Cat">Cat</option>
+              <option value="Bird">Bird</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <input
+              className="input"
+              placeholder="Vaccine Name"
+              value={form.vaccineName}
+              onChange={(e) => setForm({ ...form, vaccineName: e.target.value })}
+              required
+            />
+
+            <input
+              className="input"
+              placeholder="Location"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              required
+            />
+
+            <input
+              className="input"
+              placeholder="Organizer"
+              value={form.organizer}
+              onChange={(e) => setForm({ ...form, organizer: e.target.value })}
+            />
+
+            <input
+              className="input"
+              type="date"
+              value={form.campaignDate}
+              onChange={(e) => setForm({ ...form, campaignDate: e.target.value })}
+              required
+            />
+
+            <input
+              className="input"
+              type="date"
+              value={form.lastRegistrationDate}
+              onChange={(e) =>
+                setForm({ ...form, lastRegistrationDate: e.target.value })
+              }
+            />
+
+            <input
+              className="input"
+              type="number"
+              placeholder="Available Slots"
+              value={form.availableSlots}
+              onChange={(e) =>
+                setForm({ ...form, availableSlots: Number(e.target.value) })
+              }
+            />
+
+            <select
+              className="select"
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+            >
+              <option value="Upcoming">Upcoming</option>
+              <option value="Ongoing">Ongoing</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+
+            <button className="btn" type="submit">
+              Create Campaign
+            </button>
+          </form>
+        </div>
+      )}
+      
