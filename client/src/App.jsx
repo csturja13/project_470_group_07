@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from "reac
 import "./App.css";
 import { api, setAuthToken } from "./api";
 import DocumentsPage from "./components/DocumentsPage";
+import VaccinationCampaignsPage from "./components/VaccinationCampaignsPage";
+
 
 /* ================= AUTH HELPERS ================= */
 function saveAuth(token, user) {
