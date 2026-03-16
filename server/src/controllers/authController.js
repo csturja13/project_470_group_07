@@ -38,6 +38,7 @@ async function signup(req, res) {
 
     return res.status(201).json({
       token,
+<<<<<<< HEAD
       user: {
         id: user._id,
         name: user.name,
@@ -46,6 +47,9 @@ async function signup(req, res) {
         averageRating: user.averageRating,
         totalRatings: user.totalRatings
       }
+=======
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
     });
   } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });
@@ -70,6 +74,7 @@ async function login(req, res) {
 
     return res.json({
       token,
+<<<<<<< HEAD
       user: {
         id: user._id,
         name: user.name,
@@ -78,6 +83,9 @@ async function login(req, res) {
         averageRating: user.averageRating,
         totalRatings: user.totalRatings
       }
+=======
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
     });
   } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });

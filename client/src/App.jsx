@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from "react-router-dom";
 import "./App.css";
 import { api, setAuthToken } from "./api";
 import DocumentsPage from "./components/DocumentsPage";
@@ -30,6 +30,7 @@ function Navbar({
   onSearchEnter
 }) {
   return (
+<<<<<<< HEAD
     <div className="card" style={{ marginBottom: 18 }}>
       <div
         style={{
@@ -52,6 +53,54 @@ function Navbar({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+=======
+    <div className="card" style={{ marginBottom: 14 }}>
+      <div className="navbarTop">
+        <div className="navLinks">
+          <div style={{ fontSize: 22 }}>🐾</div>
+          <b style={{ fontSize: 25 }}>Pawlytics</b>
+
+          <Link to="/">Home</Link>
+          {user && user.role === "admin" && <Link to="/admin">Admin Panel</Link>}
+
+          {!user && <Link to="/signup">Signup</Link>}
+          {!user && <Link to="/login">Login</Link>}
+          {user && <Link to="/profile">Profile</Link>}
+          {user && <Link to="/documents">Documents</Link>}
+        </div>
+
+        <div className="navSearchLine">
+          <input
+            className="input"
+            placeholder="Search pets… (Enter)"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onSearchEnter();
+            }}
+          />
+
+          <select
+            className="select"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">Category → All</option>
+            <option value="Dog">Category → Dog</option>
+            <option value="Cat">Category → Cat</option>
+            <option value="Bird">Category → Bird</option>
+            <option value="Other">Category → Other</option>
+          </select>
+
+          <select className="select" value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="">Sort → Default</option>
+            <option value="price_asc">Sort → Price: Low → High</option>
+            <option value="price_desc">Sort → Price: High → Low</option>
+          </select>
+        </div>
+
+        <div className="navRight">
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
           {user ? (
             <>
               <span className="badge">{user.name} ({user.role})</span>
@@ -63,6 +112,7 @@ function Navbar({
         </div>
       </div>
 
+<<<<<<< HEAD
       <div
         style={{
           display: "grid",
@@ -104,6 +154,8 @@ function Navbar({
         </select>
       </div>
 
+=======
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
       {!user && (
         <div style={{ marginTop: 14, opacity: 0.9 }}>
           Welcome to Pawlytics. Signup/Login to create pet posts.
@@ -113,14 +165,69 @@ function Navbar({
   );
 }
 
+/*================= REUSABLE CARD ================= */
+
+function PetCard({ p }) {
+  return (
+    <div className="petCard" key={p._id}>
+      <img
+        className="petImg"
+        src={
+          p.imagePath
+            ? `http://localhost:5000${p.imagePath}`
+            : "https://placehold.co/600x400?text=Pet"
+        }
+        alt={p.name}
+      />
+
+      <div className="petTitle">
+        {p.name} — {p.species}
+      </div>
+
+      <div className="petMeta">
+        Sex: {p.sex || "Not specified"} • Age: {p.age || "Not specified"} • Price: {p.price || "Not specified"}
+      </div>
+
+      <div className="petMeta">{p.description}</div>
+      <div className="petStatus">Status: {p.approvalStatus}</div>
+
+      <div style={{ marginTop: 10 }}>
+        <Link to={`/pets/${p._id}`} className="btn">
+          View Details
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 /* ================= HOME (FEED FIRST) ================= */
 function Home({ user, pets, loading, error, onRefresh }) {
+  const myPets = user
+    ? pets.filter((p) => p.owner && p.owner._id === user._id)
+    : [];
+
+  const otherPets = user
+    ? pets.filter((p) => !p.owner || p.owner._id !== user._id)
+    : pets;
+
   return (
+<<<<<<< HEAD
     <div style={{ display: "grid", gap: 20 }}>
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
           <h2 style={{ margin: 0 }}>Pet Feed</h2>
           <button className="btn" onClick={onRefresh}>Refresh</button>
+=======
+    <div>
+      <div className="card">
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <h2 style={{ margin: 0 }}>
+            {user ? "Pet Feed" : "All Pet Posts"}
+          </h2>
+          <button className="btn" type="button" onClick={onRefresh}>
+            Refresh
+          </button>
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
         </div>
 
         {loading && <div style={{ marginTop: 12 }}>Loading pets…</div>}
@@ -131,6 +238,7 @@ function Home({ user, pets, loading, error, onRefresh }) {
           </div>
         )}
 
+<<<<<<< HEAD
         <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
           {pets.map((p) => (
             <div key={p._id} className="badge" style={{ padding: 12 }}>
@@ -160,6 +268,53 @@ function Home({ user, pets, loading, error, onRefresh }) {
         {!user && <div style={{ marginTop: 18, opacity: 0.75 }}>Created by CAPA (2026)</div>}
       </div>
 
+=======
+        {!loading && !error && !user && (
+          <>
+            <div className="petGrid" style={{ marginTop: 14 }}>
+              {pets.map((p) => (
+                <PetCard key={p._id} p={p} />
+              ))}
+            </div>
+
+            {!pets.length && <div style={{ marginTop: 10, opacity: 0.8 }}>No pets found.</div>}
+          </>
+        )}
+
+        {!loading && !error && user && (
+          <>
+            <h3 style={{ marginTop: 18 }}>My Pet Posts</h3>
+            <div className="petGrid" style={{ marginTop: 14 }}>
+              {myPets.map((p) => (
+                <PetCard key={p._id} p={p} />
+              ))}
+            </div>
+            {!myPets.length && (
+              <div style={{ marginTop: 10, opacity: 0.8 }}>You have not posted any pets yet.</div>
+            )}
+
+            <h3 style={{ marginTop: 28 }}>Other Users' Pet Posts</h3>
+            <div className="petGrid" style={{ marginTop: 14 }}>
+              {otherPets.map((p) => (
+                <PetCard key={p._id} p={p} />
+              ))}
+            </div>
+            {!otherPets.length && (
+              <div style={{ marginTop: 10, opacity: 0.8 }}>No posts from other users found.</div>
+            )}
+          </>
+        )}
+      </div>
+
+      {!user && (
+        <div className="card welcomeCard">
+          <p style={{ margin: "10px 0 0", opacity: 0.9 }}>
+            Created by CAPA (2026)
+          </p>
+        </div>
+      )}
+
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
       {user && <CreatePet user={user} onCreated={onRefresh} />}
     </div>
   );
@@ -184,6 +339,7 @@ function CreatePet({ user, onCreated }) {
     setErr("");
     setMsg("");
 
+<<<<<<< HEAD
     try {
       const data = new FormData();
       data.append("name", form.name);
@@ -193,11 +349,22 @@ function CreatePet({ user, onCreated }) {
       data.append("price", form.price === "" ? "" : String(form.price));
       data.append("description", form.description);
       if (imageFile) data.append("image", imageFile);
+=======
+    const data = new FormData();
+    data.append("name", form.name);
+    data.append("species", form.species);
+    data.append("sex", form.sex);
+    data.append("age", form.age === "" ? "" : String(form.age));
+    data.append("price", form.price === "" ? "" : String(form.price));
+    data.append("description", form.description);
+    if (imageFile) data.append("image", imageFile);
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
 
       await api.post("/api/pets", data, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
+<<<<<<< HEAD
       setForm({
         name: "",
         species: "Dog",
@@ -214,6 +381,22 @@ function CreatePet({ user, onCreated }) {
     } catch (e2) {
       setErr(e2?.response?.data?.message || "Failed to submit pet");
     }
+=======
+    setForm({
+      name: "",
+      species: "Dog",
+      sex: "Male",
+      age: "",
+      price: "",
+      description: ""
+    });
+    setImageFile(null);
+
+    const fileInput = document.getElementById("petImageInput");
+    if (fileInput) fileInput.value = "";
+
+    onCreated();
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
   }
 
   if (!user) return null;
@@ -222,10 +405,22 @@ function CreatePet({ user, onCreated }) {
     <div className="card">
       <h2>Create Pet Post</h2>
 
+<<<<<<< HEAD
       {err && <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>{err}</div>}
       {msg && <div className="badge" style={{ background: "rgba(0,255,120,0.15)" }}>{msg}</div>}
 
       <form onSubmit={submitPet} style={{ display: "grid", gap: 12, marginTop: 12 }}>
+=======
+      <form
+  onSubmit={submitPet}
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    gap: 14,
+    maxWidth: 500
+  }}
+>
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
         <input
           className="input"
           placeholder="Pet name"
@@ -233,6 +428,7 @@ function CreatePet({ user, onCreated }) {
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           required
         />
+<<<<<<< HEAD
 
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
           <select
@@ -270,6 +466,44 @@ function CreatePet({ user, onCreated }) {
             onChange={(e) => setForm({ ...form, price: e.target.value })}
           />
         </div>
+=======
+
+        <select
+          className="select"
+          value={form.species}
+          onChange={(e) => setForm({ ...form, species: e.target.value })}
+        >
+          <option value="Dog">Dog</option>
+          <option value="Cat">Cat</option>
+          <option value="Bird">Bird</option>
+          <option value="Other">Other</option>
+        </select>
+
+        <select
+          className="select"
+          value={form.sex}
+          onChange={(e) => setForm({ ...form, sex: e.target.value })}
+        >
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+
+        <input
+          className="input"
+          type="number"
+          placeholder="Age"
+          value={form.age}
+          onChange={(e) => setForm({ ...form, age: e.target.value })}
+        />
+
+        <input
+          className="input"
+          type="number"
+          placeholder="Price"
+          value={form.price}
+          onChange={(e) => setForm({ ...form, price: e.target.value })}
+        />
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
 
         <input
           id="petImageInput"
@@ -297,10 +531,77 @@ function CreatePet({ user, onCreated }) {
   );
 }
 
+<<<<<<< HEAD
 /* ================= PET SHOPS PAGE ================= */
 function PetShops() {
   const [shops, setShops] = useState([]);
   const [err, setErr] = useState("");
+=======
+/* ================= PET DETAILS ================= */
+function PetDetails() {
+  const { id } = useParams();
+  const [pet, setPet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    async function loadPet() {
+      setLoading(true);
+      setErr("");
+
+      try {
+        const res = await api.get(`/api/pets/${id}`);
+        setPet(res.data);
+      } catch (e) {
+        setErr(e?.response?.data?.message || "Failed to load pet details");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPet();
+  }, [id]);
+
+  if (loading) return <div className="card">Loading pet details...</div>;
+  if (err) return <div className="card">{err}</div>;
+  if (!pet) return <div className="card">Pet not found.</div>;
+
+  return (
+    <div className="card">
+      <h2>{pet.name} — {pet.species}</h2>
+
+      <img
+        src={
+          pet.imagePath
+            ? `http://localhost:5000${pet.imagePath}`
+            : "https://placehold.co/600x400?text=Pet"
+        }
+        alt={pet.name}
+        style={{
+          width: "100%",
+          maxWidth: 500,
+          borderRadius: 14,
+          objectFit: "cover",
+          marginBottom: 14
+        }}
+      />
+
+      <div><b>Age:</b> {pet.age}</div>
+      <div><b>Price:</b> {pet.price}</div>
+      <div><b>Description:</b> {pet.description}</div>
+      <div><b>Status:</b> {pet.approvalStatus}</div>
+
+      <hr style={{ margin: "16px 0" }} />
+
+      <h3>Owner Information</h3>
+      <div><b>Name:</b> {pet.owner?.name || "Not available"}</div>
+      <div><b>Email:</b> {pet.owner?.email || "Not available"}</div>
+    </div>
+  );
+}
+
+/* ================= SIGNUP ================= */
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
 
   useEffect(() => {
     async function loadShops() {
@@ -751,6 +1052,7 @@ function AdminPanel({ user }) {
           />
 
           <div style={{ flex: 1 }}>
+<<<<<<< HEAD
             <div style={{ fontWeight: 900, fontSize: 18 }}>
               {p.name} — {p.species}
             </div>
@@ -759,6 +1061,12 @@ function AdminPanel({ user }) {
               Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
             </div>
 
+=======
+            <div style={{ fontWeight: 900, fontSize: 18 }}>{p.name} — {p.species}</div>
+            <div style={{ opacity: 0.85 }}>
+              Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
+            </div>
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
             <div style={{ opacity: 0.9 }}>{p.description}</div>
 
             <div style={{ opacity: 0.7, fontSize: 13 }}>
@@ -787,6 +1095,10 @@ export default function App() {
   const [searchText, setSearchText] = useState("");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
+<<<<<<< HEAD
+=======
+
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
   const [petsRaw, setPetsRaw] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -857,6 +1169,7 @@ export default function App() {
         />
 
         <Routes>
+<<<<<<< HEAD
           <Route
             path="/"
             element={
@@ -876,6 +1189,27 @@ export default function App() {
           <Route path="/documents" element={<DocumentsPage user={user} />} />
           <Route path="/admin" element={<AdminPanel user={user} />} />
         </Routes>
+=======
+        <Route
+          path="/"
+          element={
+            <Home
+              user={user}
+              pets={pets}
+              loading={loading}
+              error={err}
+              onRefresh={loadPets}
+            />
+          }
+        />
+        <Route path="/signup" element={<Signup onAuth={onAuth} />} />
+        <Route path="/login" element={<Login onAuth={onAuth} />} />
+        <Route path="/profile" element={<Profile user={user} />} />
+        <Route path="/documents" element={<DocumentsPage user={user} />} />
+        <Route path="/admin" element={<AdminPanel user={user} />} />
+        <Route path="/pets/:id" element={<PetDetails />} />
+      </Routes>
+>>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
       </div>
     </BrowserRouter>
   );
