@@ -5,7 +5,6 @@ import { api, setAuthToken } from "./api";
 import DocumentsPage from "./components/DocumentsPage";
 import VaccinationCampaignsPage from "./components/VaccinationCampaignsPage";
 
-
 /* ================= AUTH HELPERS ================= */
 function saveAuth(token, user) {
   localStorage.setItem("token", token);
@@ -32,30 +31,6 @@ function Navbar({
   onSearchEnter
 }) {
   return (
-<<<<<<< HEAD
-    <div className="card" style={{ marginBottom: 18 }}>
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: 16,
-          justifyContent: "space-between"
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-          <div style={{ fontSize: 22, fontWeight: 900 }}>🐾 Pawlytics</div>
-          <Link to="/" className="btn secondary">Home</Link>
-          {user && <Link to="/petshops" className="btn secondary">Pet Shops</Link>}
-          {user && <Link to="/profile" className="btn secondary">Profile</Link>}
-          {user && <Link to="/documents" className="btn secondary">Documents</Link>}
-          {user && user.role === "admin" && <Link to="/admin" className="btn secondary">Admin Panel</Link>}
-          {!user && <Link to="/signup" className="btn secondary">Signup</Link>}
-          {!user && <Link to="/login" className="btn secondary">Login</Link>}
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-=======
     <div className="card" style={{ marginBottom: 14 }}>
       <div className="navbarTop">
         <div className="navLinks">
@@ -63,12 +38,14 @@ function Navbar({
           <b style={{ fontSize: 25 }}>Pawlytics</b>
 
           <Link to="/">Home</Link>
+          {user && <Link to="/petshops">Pet Shops</Link>}
+          {user && <Link to="/profile">Profile</Link>}
+          {user && <Link to="/documents">Documents</Link>}
+          {user && <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>}
           {user && user.role === "admin" && <Link to="/admin">Admin Panel</Link>}
 
           {!user && <Link to="/signup">Signup</Link>}
           {!user && <Link to="/login">Login</Link>}
-          {user && <Link to="/profile">Profile</Link>}
-          {user && <Link to="/documents">Documents</Link>}
         </div>
 
         <div className="navSearchLine">
@@ -102,10 +79,11 @@ function Navbar({
         </div>
 
         <div className="navRight">
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
           {user ? (
             <>
-              <span className="badge">{user.name} ({user.role})</span>
+              <span className="badge">
+                {user.name} ({user.role})
+              </span>
               <button className="btn" onClick={onLogout}>Logout</button>
             </>
           ) : (
@@ -114,50 +92,6 @@ function Navbar({
         </div>
       </div>
 
-<<<<<<< HEAD
-      <div
-        style={{
-          display: "grid",
-          gap: 12,
-          gridTemplateColumns: "1.4fr 0.6fr 0.6fr",
-          marginTop: 18
-        }}
-      >
-        <input
-          className="input"
-          placeholder="Search pets... (Enter)"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") onSearchEnter();
-          }}
-        />
-
-        <select
-          className="input"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-        >
-          <option value="">Category → All</option>
-          <option value="Dog">Category → Dog</option>
-          <option value="Cat">Category → Cat</option>
-          <option value="Bird">Category → Bird</option>
-          <option value="Other">Category → Other</option>
-        </select>
-
-        <select
-          className="input"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-        >
-          <option value="">Sort → Default</option>
-          <option value="price_asc">Sort → Price: Low → High</option>
-          <option value="price_desc">Sort → Price: High → Low</option>
-        </select>
-      </div>
-
-=======
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
       {!user && (
         <div style={{ marginTop: 14, opacity: 0.9 }}>
           Welcome to Pawlytics. Signup/Login to create pet posts.
@@ -167,8 +101,7 @@ function Navbar({
   );
 }
 
-/*================= REUSABLE CARD ================= */
-
+/* ================= REUSABLE CARD ================= */
 function PetCard({ p }) {
   return (
     <div className="petCard" key={p._id}>
@@ -213,13 +146,6 @@ function Home({ user, pets, loading, error, onRefresh }) {
     : pets;
 
   return (
-<<<<<<< HEAD
-    <div style={{ display: "grid", gap: 20 }}>
-      <div className="card">
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-          <h2 style={{ margin: 0 }}>Pet Feed</h2>
-          <button className="btn" onClick={onRefresh}>Refresh</button>
-=======
     <div>
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -229,7 +155,6 @@ function Home({ user, pets, loading, error, onRefresh }) {
           <button className="btn" type="button" onClick={onRefresh}>
             Refresh
           </button>
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
         </div>
 
         {loading && <div style={{ marginTop: 12 }}>Loading pets…</div>}
@@ -240,37 +165,6 @@ function Home({ user, pets, loading, error, onRefresh }) {
           </div>
         )}
 
-<<<<<<< HEAD
-        <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
-          {pets.map((p) => (
-            <div key={p._id} className="badge" style={{ padding: 12 }}>
-              <div style={{ fontWeight: 800, fontSize: 18 }}>
-                {p.name} — {p.species}
-              </div>
-              <div style={{ opacity: 0.85, marginTop: 4 }}>
-                Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
-              </div>
-              <div style={{ marginTop: 6 }}>{p.description}</div>
-              <div style={{ marginTop: 6, opacity: 0.75, fontSize: 13 }}>
-                Status: {p.approvalStatus}
-              </div>
-              {p.imagePath && (
-                <img
-                  src={`http://localhost:5000${p.imagePath}`}
-                  alt={p.name}
-                  style={{ width: "100%", maxWidth: 320, marginTop: 10, borderRadius: 12 }}
-                />
-              )}
-            </div>
-          ))}
-
-          {!loading && !pets.length && <div style={{ opacity: 0.85 }}>No pets found.</div>}
-        </div>
-
-        {!user && <div style={{ marginTop: 18, opacity: 0.75 }}>Created by CAPA (2026)</div>}
-      </div>
-
-=======
         {!loading && !error && !user && (
           <>
             <div className="petGrid" style={{ marginTop: 14 }}>
@@ -316,7 +210,6 @@ function Home({ user, pets, loading, error, onRefresh }) {
         </div>
       )}
 
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
       {user && <CreatePet user={user} onCreated={onRefresh} />}
     </div>
   );
@@ -341,7 +234,6 @@ function CreatePet({ user, onCreated }) {
     setErr("");
     setMsg("");
 
-<<<<<<< HEAD
     try {
       const data = new FormData();
       data.append("name", form.name);
@@ -351,22 +243,11 @@ function CreatePet({ user, onCreated }) {
       data.append("price", form.price === "" ? "" : String(form.price));
       data.append("description", form.description);
       if (imageFile) data.append("image", imageFile);
-=======
-    const data = new FormData();
-    data.append("name", form.name);
-    data.append("species", form.species);
-    data.append("sex", form.sex);
-    data.append("age", form.age === "" ? "" : String(form.age));
-    data.append("price", form.price === "" ? "" : String(form.price));
-    data.append("description", form.description);
-    if (imageFile) data.append("image", imageFile);
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
 
       await api.post("/api/pets", data, {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
-<<<<<<< HEAD
       setForm({
         name: "",
         species: "Dog",
@@ -377,28 +258,14 @@ function CreatePet({ user, onCreated }) {
       });
       setImageFile(null);
       setMsg("Pet post submitted");
+
       const fileInput = document.getElementById("petImageInput");
       if (fileInput) fileInput.value = "";
+
       onCreated();
     } catch (e2) {
       setErr(e2?.response?.data?.message || "Failed to submit pet");
     }
-=======
-    setForm({
-      name: "",
-      species: "Dog",
-      sex: "Male",
-      age: "",
-      price: "",
-      description: ""
-    });
-    setImageFile(null);
-
-    const fileInput = document.getElementById("petImageInput");
-    if (fileInput) fileInput.value = "";
-
-    onCreated();
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
   }
 
   if (!user) return null;
@@ -407,22 +274,18 @@ function CreatePet({ user, onCreated }) {
     <div className="card">
       <h2>Create Pet Post</h2>
 
-<<<<<<< HEAD
       {err && <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>{err}</div>}
       {msg && <div className="badge" style={{ background: "rgba(0,255,120,0.15)" }}>{msg}</div>}
 
-      <form onSubmit={submitPet} style={{ display: "grid", gap: 12, marginTop: 12 }}>
-=======
       <form
-  onSubmit={submitPet}
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: 14,
-    maxWidth: 500
-  }}
->
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
+        onSubmit={submitPet}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          maxWidth: 500
+        }}
+      >
         <input
           className="input"
           placeholder="Pet name"
@@ -430,45 +293,6 @@ function CreatePet({ user, onCreated }) {
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           required
         />
-<<<<<<< HEAD
-
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-          <select
-            className="input"
-            value={form.species}
-            onChange={(e) => setForm({ ...form, species: e.target.value })}
-          >
-            <option>Dog</option>
-            <option>Cat</option>
-            <option>Bird</option>
-            <option>Other</option>
-          </select>
-
-          <select
-            className="input"
-            value={form.sex}
-            onChange={(e) => setForm({ ...form, sex: e.target.value })}
-          >
-            <option>Male</option>
-            <option>Female</option>
-          </select>
-        </div>
-
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-          <input
-            className="input"
-            placeholder="Age"
-            value={form.age}
-            onChange={(e) => setForm({ ...form, age: e.target.value })}
-          />
-          <input
-            className="input"
-            placeholder="Price"
-            value={form.price}
-            onChange={(e) => setForm({ ...form, price: e.target.value })}
-          />
-        </div>
-=======
 
         <select
           className="select"
@@ -505,7 +329,6 @@ function CreatePet({ user, onCreated }) {
           value={form.price}
           onChange={(e) => setForm({ ...form, price: e.target.value })}
         />
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
 
         <input
           id="petImageInput"
@@ -533,12 +356,6 @@ function CreatePet({ user, onCreated }) {
   );
 }
 
-<<<<<<< HEAD
-/* ================= PET SHOPS PAGE ================= */
-function PetShops() {
-  const [shops, setShops] = useState([]);
-  const [err, setErr] = useState("");
-=======
 /* ================= PET DETAILS ================= */
 function PetDetails() {
   const { id } = useParams();
@@ -602,8 +419,10 @@ function PetDetails() {
   );
 }
 
-/* ================= SIGNUP ================= */
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
+/* ================= PET SHOPS PAGE ================= */
+function PetShops() {
+  const [shops, setShops] = useState([]);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     async function loadShops() {
@@ -1054,21 +873,10 @@ function AdminPanel({ user }) {
           />
 
           <div style={{ flex: 1 }}>
-<<<<<<< HEAD
-            <div style={{ fontWeight: 900, fontSize: 18 }}>
-              {p.name} — {p.species}
-            </div>
-
-            <div style={{ opacity: 0.85 }}>
-              Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
-            </div>
-
-=======
             <div style={{ fontWeight: 900, fontSize: 18 }}>{p.name} — {p.species}</div>
             <div style={{ opacity: 0.85 }}>
               Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
             </div>
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
             <div style={{ opacity: 0.9 }}>{p.description}</div>
 
             <div style={{ opacity: 0.7, fontSize: 13 }}>
@@ -1097,10 +905,6 @@ export default function App() {
   const [searchText, setSearchText] = useState("");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
-<<<<<<< HEAD
-=======
-
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
   const [petsRaw, setPetsRaw] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -1171,7 +975,6 @@ export default function App() {
         />
 
         <Routes>
-<<<<<<< HEAD
           <Route
             path="/"
             element={
@@ -1184,34 +987,15 @@ export default function App() {
               />
             }
           />
-          <Route path="/petshops" element={<PetShops />} />
           <Route path="/signup" element={<Signup onAuth={onAuth} />} />
           <Route path="/login" element={<Login onAuth={onAuth} />} />
           <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
           <Route path="/documents" element={<DocumentsPage user={user} />} />
+          <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
           <Route path="/admin" element={<AdminPanel user={user} />} />
+          <Route path="/pets/:id" element={<PetDetails />} />
+          <Route path="/petshops" element={<PetShops />} />
         </Routes>
-=======
-        <Route
-          path="/"
-          element={
-            <Home
-              user={user}
-              pets={pets}
-              loading={loading}
-              error={err}
-              onRefresh={loadPets}
-            />
-          }
-        />
-        <Route path="/signup" element={<Signup onAuth={onAuth} />} />
-        <Route path="/login" element={<Login onAuth={onAuth} />} />
-        <Route path="/profile" element={<Profile user={user} />} />
-        <Route path="/documents" element={<DocumentsPage user={user} />} />
-        <Route path="/admin" element={<AdminPanel user={user} />} />
-        <Route path="/pets/:id" element={<PetDetails />} />
-      </Routes>
->>>>>>> 2f29e3fc152878b47b5a9261b3e45e6126a6fcfd
       </div>
     </BrowserRouter>
   );
