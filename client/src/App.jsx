@@ -47,6 +47,8 @@ function Navbar({
           {!user && <Link to="/login">Login</Link>}
           {user && <Link to="/profile">Profile</Link>}
           {user && <Link to="/documents">Documents</Link>}
+          <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>
+        
         </div>
 
         <div className="navSearchLine">
@@ -694,7 +696,10 @@ export default function App() {
         <Route path="/signup" element={<Signup onAuth={onAuth} />} />
         <Route path="/login" element={<Login onAuth={onAuth} />} />
         <Route path="/profile" element={<Profile user={user} />} />
+        
         <Route path="/documents" element={<DocumentsPage user={user} />} />
+        <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />}
+/>
         <Route path="/admin" element={<AdminPanel user={user} />} />
         <Route path="/pets/:id" element={<PetDetails />} />
       </Routes>
