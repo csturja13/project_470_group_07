@@ -32,23 +32,80 @@ function Navbar({
 }) {
   return (
     <div className="card" style={{ marginBottom: 14 }}>
-      <div className="navbarTop">
-        <div className="navLinks">
-          <div style={{ fontSize: 22 }}>🐾</div>
-          <b style={{ fontSize: 25 }}>Pawlytics</b>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 14
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 12
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 18,
+              flexWrap: "wrap"
+            }}
+          >
+            <div style={{ fontSize: 22 }}>🐾</div>
+            <b style={{ fontSize: 25 }}>Pawlytics</b>
 
-          <Link to="/">Home</Link>
-          {user && <Link to="/petshops">Pet Shops</Link>}
-          {user && <Link to="/profile">Profile</Link>}
-          {user && <Link to="/documents">Documents</Link>}
-          {user && <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>}
-          {user && user.role === "admin" && <Link to="/admin">Admin Panel</Link>}
+            <Link to="/">Home</Link>
+            {user && <Link to="/petshops">Pet Shops</Link>}
+            {user && <Link to="/profile">Profile</Link>}
+            {user && <Link to="/documents">Documents</Link>}
+            {user && <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>}
 
-          {!user && <Link to="/signup">Signup</Link>}
-          {!user && <Link to="/login">Login</Link>}
+            {!user && <Link to="/signup">Signup</Link>}
+            {!user && <Link to="/login">Login</Link>}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap"
+            }}
+          >
+            {user ? (
+              <>
+                {user.role === "admin" && (
+                  <Link to="/admin" className="btn secondary">
+                    Admin Panel
+                  </Link>
+                )}
+
+                <span className="badge">
+                  {user.name} ({user.role})
+                </span>
+
+                <button className="btn" onClick={onLogout}>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <span className="badge">Not logged in</span>
+            )}
+          </div>
         </div>
 
-        <div className="navSearchLine">
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap"
+          }}
+        >
           <input
             className="input"
             placeholder="Search pets… (Enter)"
@@ -57,12 +114,14 @@ function Navbar({
             onKeyDown={(e) => {
               if (e.key === "Enter") onSearchEnter();
             }}
+            style={{ flex: "1 1 320px", minWidth: 260 }}
           />
 
           <select
             className="select"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            style={{ minWidth: 220 }}
           >
             <option value="">Category → All</option>
             <option value="Dog">Category → Dog</option>
@@ -71,24 +130,16 @@ function Navbar({
             <option value="Other">Category → Other</option>
           </select>
 
-          <select className="select" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <select
+            className="select"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            style={{ minWidth: 220 }}
+          >
             <option value="">Sort → Default</option>
             <option value="price_asc">Sort → Price: Low → High</option>
             <option value="price_desc">Sort → Price: High → Low</option>
           </select>
-        </div>
-
-        <div className="navRight">
-          {user ? (
-            <>
-              <span className="badge">
-                {user.name} ({user.role})
-              </span>
-              <button className="btn" onClick={onLogout}>Logout</button>
-            </>
-          ) : (
-            <span className="badge">Not logged in</span>
-          )}
         </div>
       </div>
 
@@ -100,7 +151,6 @@ function Navbar({
     </div>
   );
 }
-
 /* ================= REUSABLE CARD ================= */
 function PetCard({ p }) {
   return (
@@ -420,22 +470,69 @@ function PetDetails() {
 }
 
 /* ================= PET SHOPS PAGE ================= */
-function PetShops() {
+function PetShops({ user }) {
   const [shops, setShops] = useState([]);
   const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
+
+  async function loadShops() {
+    try {
+      setErr("");
+      const res = await api.get("/api/petshops");
+      setShops(res.data);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load pet shops");
+    }
+  }
 
   useEffect(() => {
-    async function loadShops() {
-      try {
-        setErr("");
-        const res = await api.get("/api/petshops");
-        setShops(res.data);
-      } catch (e) {
-        setErr(e?.response?.data?.message || "Failed to load pet shops");
-      }
-    }
     loadShops();
   }, []);
+
+  async function rateShop(shopId, value) {
+    if (!user) {
+      setErr("Please login first.");
+      return;
+    }
+
+    if (user.role !== "user") {
+      setErr("Only normal users can rate pet shops.");
+      return;
+    }
+
+    try {
+      setErr("");
+      setMsg("");
+      await api.post(`/api/petshops/${shopId}/rate`, {
+        value,
+        review: ""
+      });
+      setMsg("Rating submitted successfully.");
+      loadShops();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to submit rating");
+    }
+  }
+
+  function renderStars(shop) {
+    return (
+      <div style={{ display: "flex", gap: 6, marginTop: 10, fontSize: 28 }}>
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span
+            key={star}
+            onClick={() => rateShop(shop._id, star)}
+            style={{
+              cursor: user?.role === "user" ? "pointer" : "default",
+              color: star <= Math.round(shop.averageRating || 0) ? "#facc15" : "#9ca3af"
+            }}
+            title={`Rate ${star} star`}
+          >
+            ★
+          </span>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="card">
@@ -447,6 +544,12 @@ function PetShops() {
         </div>
       )}
 
+      {msg && (
+        <div className="badge" style={{ background: "rgba(0,255,120,0.15)", marginTop: 12 }}>
+          {msg}
+        </div>
+      )}
+
       {!err && !shops.length && <div style={{ marginTop: 10 }}>No pet shops found.</div>}
 
       <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
@@ -454,8 +557,13 @@ function PetShops() {
           <div key={s._id} className="badge" style={{ padding: 14 }}>
             <div style={{ fontWeight: 800, fontSize: 18 }}>{s.name}</div>
             <div style={{ marginTop: 4 }}>{s.email}</div>
-            <div style={{ marginTop: 6 }}>⭐ {s.averageRating || 0} / 5</div>
-            <div>{s.totalRatings || 0} reviews</div>
+
+            {renderStars(s)}
+
+            <div style={{ marginTop: 8 }}>
+              ⭐ {s.averageRating || 0} / 5
+            </div>
+
             <div style={{ marginTop: 4, opacity: 0.8 }}>Role: {s.role}</div>
           </div>
         ))}
@@ -463,7 +571,6 @@ function PetShops() {
     </div>
   );
 }
-
 /* ================= SIGNUP ================= */
 function Signup({ onAuth }) {
   const nav = useNavigate();
@@ -994,7 +1101,7 @@ export default function App() {
           <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
           <Route path="/admin" element={<AdminPanel user={user} />} />
           <Route path="/pets/:id" element={<PetDetails />} />
-          <Route path="/petshops" element={<PetShops />} />
+          <Route path="/petshops" element={<PetShops user={user} />} />
         </Routes>
       </div>
     </BrowserRouter>
