@@ -22,7 +22,7 @@ async function approvePet(req, res) {
     const pet = await Pet.findByIdAndUpdate(
       id,
       { approvalStatus: "Approved" },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!pet) {

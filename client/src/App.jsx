@@ -455,11 +455,10 @@ function PetDetails() {
           marginBottom: 14
         }}
       />
-
-      <div><b>Age:</b> {pet.age}</div>
-      <div><b>Price:</b> {pet.price}</div>
-      <div><b>Description:</b> {pet.description}</div>
-      <div><b>Status:</b> {pet.approvalStatus}</div>
+      <div><b>Sex:</b>{pet.sex || "Not specified"}</div>
+      <div><b>Age:</b> {pet.age ?? "Not specified"}</div>
+      <div><b>Price:</b> {pet.price ?? "Not specified"}</div>
+      <div><b>Description:</b> {pet.description || "No description"}</div>
 
       <hr style={{ margin: "16px 0" }} />
 
@@ -925,7 +924,7 @@ function Profile({ user, onUserRefresh }) {
 }
 
 /* ================= ADMIN PANEL ================= */
-function AdminPanel({ user }) {
+function AdminPanel({ user, onRefresh }) {
   const [pending, setPending] = useState([]);
   const [err, setErr] = useState("");
 
@@ -947,6 +946,7 @@ function AdminPanel({ user }) {
     try {
       await api.patch(`/api/admin/pets/${id}/approve`);
       await loadPending();
+      onRefresh?.();
     } catch (e) {
       setErr(e?.response?.data?.message || "Failed to approve pet");
     }
@@ -956,6 +956,7 @@ function AdminPanel({ user }) {
     try {
       await api.delete(`/api/admin/pets/${id}/reject`);
       await loadPending();
+      onRefresh?.();
     } catch (e) {
       setErr(e?.response?.data?.message || "Failed to reject pet");
     }
@@ -1117,7 +1118,7 @@ export default function App() {
           <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
           <Route path="/documents" element={<DocumentsPage user={user} />} />
           <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
-          <Route path="/admin" element={<AdminPanel user={user} />} />
+          <Route path="/admin" element={<AdminPanel user={user} onRefresh={loadPets} />} />
           <Route path="/pets/:id" element={<PetDetails />} />
           <Route path="/petshops" element={<PetShops user={user} />} />
         </Routes>
