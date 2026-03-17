@@ -19,6 +19,16 @@ export default function PetShopDetailsPage({ user }) {
   });
   const [itemImage, setItemImage] = useState(null);
 
+  const [petForm, setPetForm] = useState({
+    name: "",
+    species: "Dog",
+    sex: "Male",
+    age: "",
+    price: "",
+    description: ""
+  });
+  const [petImage, setPetImage] = useState(null);
+
   async function loadShopDetails() {
     try {
       setErr("");
@@ -68,6 +78,41 @@ export default function PetShopDetailsPage({ user }) {
     }
   }
 
+  async function submitPet(e) {
+    e.preventDefault();
+    setErr("");
+    setMsg("");
+
+    try {
+      const data = new FormData();
+      data.append("name", petForm.name);
+      data.append("species", petForm.species);
+      data.append("sex", petForm.sex);
+      data.append("age", petForm.age);
+      data.append("price", petForm.price);
+      data.append("description", petForm.description);
+      if (petImage) data.append("image", petImage);
+
+      await api.post("/api/pets", data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+
+      setPetForm({
+        name: "",
+        species: "Dog",
+        sex: "Male",
+        age: "",
+        price: "",
+        description: ""
+      });
+      setPetImage(null);
+      setMsg("Pet added successfully. It may stay pending until admin approves.");
+      await loadShopDetails();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to add pet");
+    }
+  }
+
   if (err && !shop) return <div className="card">{err}</div>;
   if (!shop) return <div className="card">Loading shop details...</div>;
 
@@ -98,70 +143,144 @@ export default function PetShopDetailsPage({ user }) {
       )}
 
       {isOwner && (
-        <div className="card">
-          <h2>Add Shop Item</h2>
+        <>
+          <div className="card">
+            <h2>Add Pet</h2>
 
-          <form
-            onSubmit={submitItem}
-            style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 520 }}
-          >
-            <input
-              className="input"
-              placeholder="Item name"
-              value={itemForm.name}
-              onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
-              required
-            />
-
-            <select
-              className="select"
-              value={itemForm.category}
-              onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })}
+            <form
+              onSubmit={submitPet}
+              style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 520 }}
             >
-              <option value="food">Food</option>
-              <option value="toy">Toy</option>
-              <option value="accessory">Accessory</option>
-              <option value="medicine">Medicine</option>
-              <option value="other">Other</option>
-            </select>
+              <input
+                className="input"
+                placeholder="Pet name"
+                value={petForm.name}
+                onChange={(e) => setPetForm({ ...petForm, name: e.target.value })}
+                required
+              />
 
-            <input
-              className="input"
-              type="number"
-              placeholder="Price"
-              value={itemForm.price}
-              onChange={(e) => setItemForm({ ...itemForm, price: e.target.value })}
-              required
-            />
+              <select
+                className="select"
+                value={petForm.species}
+                onChange={(e) => setPetForm({ ...petForm, species: e.target.value })}
+              >
+                <option value="Dog">Dog</option>
+                <option value="Cat">Cat</option>
+                <option value="Bird">Bird</option>
+                <option value="Other">Other</option>
+              </select>
 
-            <input
-              className="input"
-              type="number"
-              placeholder="Stock"
-              value={itemForm.stock}
-              onChange={(e) => setItemForm({ ...itemForm, stock: e.target.value })}
-            />
+              <select
+                className="select"
+                value={petForm.sex}
+                onChange={(e) => setPetForm({ ...petForm, sex: e.target.value })}
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
 
-            <textarea
-              className="input"
-              rows={4}
-              placeholder="Description"
-              value={itemForm.description}
-              onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
-            />
+              <input
+                className="input"
+                type="number"
+                placeholder="Age"
+                value={petForm.age}
+                onChange={(e) => setPetForm({ ...petForm, age: e.target.value })}
+              />
 
-            <input
-              className="input"
-              type="file"
-              accept="image/*"
-              onChange={(e) => setItemImage(e.target.files?.[0] || null)}
-            />
+              <input
+                className="input"
+                type="number"
+                placeholder="Price"
+                value={petForm.price}
+                onChange={(e) => setPetForm({ ...petForm, price: e.target.value })}
+              />
 
-            <button className="btn" type="submit">
-              Add Item
-            </button>
-          </form>
-        </div>
+              <textarea
+                className="input"
+                rows={4}
+                placeholder="Description"
+                value={petForm.description}
+                onChange={(e) => setPetForm({ ...petForm, description: e.target.value })}
+              />
+
+              <input
+                className="input"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPetImage(e.target.files?.[0] || null)}
+              />
+
+              <button className="btn" type="submit">
+                Add Pet
+              </button>
+            </form>
+          </div>
+
+          <div className="card">
+            <h2>Add Shop Item</h2>
+
+            <form
+              onSubmit={submitItem}
+              style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 520 }}
+            >
+              <input
+                className="input"
+                placeholder="Item name"
+                value={itemForm.name}
+                onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
+                required
+              />
+
+              <select
+                className="select"
+                value={itemForm.category}
+                onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })}
+              >
+                <option value="food">Food</option>
+                <option value="toy">Toy</option>
+                <option value="accessory">Accessory</option>
+                <option value="medicine">Medicine</option>
+                <option value="other">Other</option>
+              </select>
+
+              <input
+                className="input"
+                type="number"
+                placeholder="Price"
+                value={itemForm.price}
+                onChange={(e) => setItemForm({ ...itemForm, price: e.target.value })}
+                required
+              />
+
+              <input
+                className="input"
+                type="number"
+                placeholder="Stock"
+                value={itemForm.stock}
+                onChange={(e) => setItemForm({ ...itemForm, stock: e.target.value })}
+              />
+
+              <textarea
+                className="input"
+                rows={4}
+                placeholder="Description"
+                value={itemForm.description}
+                onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
+              />
+
+              <input
+                className="input"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setItemImage(e.target.files?.[0] || null)}
+              />
+
+              <button className="btn" type="submit">
+                Add Item
+              </button>
+            </form>
+          </div>
+        </>
       )}
 
       <div className="card">
@@ -182,9 +301,14 @@ export default function PetShopDetailsPage({ user }) {
                   }
                   alt={p.name}
                 />
-                <div className="petTitle">{p.name} — {p.species}</div>
-                <div className="petMeta">Price: {p.price || 0}</div>
-                <div className="petMeta">{p.description}</div>
+                <div className="petTitle">
+                  {p.name} — {p.species}
+                </div>
+                <div className="petMeta">
+                  Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"}
+                </div>
+                <div className="petMeta">Price: {p.price ?? "Not specified"}</div>
+                <div className="petMeta">{p.description || "No description"}</div>
                 <button
                   className="btn"
                   type="button"
@@ -222,7 +346,6 @@ export default function PetShopDetailsPage({ user }) {
                 <div className="petMeta">Price: {item.price}</div>
                 <div className="petMeta">Stock: {item.stock}</div>
                 <div className="petMeta">{item.description}</div>
-
                 <button
                   className="btn"
                   type="button"

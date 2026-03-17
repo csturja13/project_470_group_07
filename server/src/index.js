@@ -9,10 +9,11 @@ const { connectDB } = require("./config/db");
 const petRoutes = require("./routes/petRoutes");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-const documentRoutes = require("./routes/documentroutes");
+const documentRoutes = require("./routes/documentRoutes");
 const userRoutes = require("./routes/userRoutes");
 const petshopRoutes = require("./routes/petshopRoutes");
 const vaccinationCampaignRoutes = require("./routes/vaccinationCampaignRoutes");
+const shopItemRoutes = require("./routes/shopItemRoutes");
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/petshops", petshopRoutes);
 app.use("/api/vaccination-campaigns", vaccinationCampaignRoutes);
+app.use("/api/shop-items", shopItemRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {

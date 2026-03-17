@@ -1,5 +1,6 @@
 const path = require("path");
 const ShopItem = require("../models/ShopItem");
+const User = require("../models/User");
 
 function getOwnerId(req) {
   return req.user?.userId || req.user?.id || req.user?._id;
@@ -12,8 +13,9 @@ async function createShopItem(req, res) {
     if (!ownerId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-
-    if (req.user?.role !== "petshop") {
+    const owner = await User.findById(ownerId).select("role");
+    
+    if (!owner || owner.role !== "petshop") {
       return res.status(403).json({ message: "Only pet shop accounts can create shop items" });
     }
 
@@ -30,7 +32,7 @@ async function createShopItem(req, res) {
 
     const item = await ShopItem.create({
       name: String(name).trim(),
-      category: category || "other",
+      category: String(category || "other").toLowerCase(),
       price: Number(price),
       description: description || "",
       stock: stock === undefined || stock === "" ? 0 : Number(stock),
@@ -74,7 +76,7 @@ async function updateShopItem(req, res) {
     const { name, category, price, description, stock } = req.body;
 
     if (name !== undefined) item.name = name;
-    if (category !== undefined) item.category = category;
+    if (category !== undefined) item.category = String(category).toLowerCase();
     if (price !== undefined) item.price = Number(price);
     if (description !== undefined) item.description = description;
     if (stock !== undefined) item.stock = Number(stock);
