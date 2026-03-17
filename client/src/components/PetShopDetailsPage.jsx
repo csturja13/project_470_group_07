@@ -1,0 +1,241 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { api } from "../api";
+
+export default function PetShopDetailsPage({ user }) {
+  const { id } = useParams();
+  const [shop, setShop] = useState(null);
+  const [pets, setPets] = useState([]);
+  const [items, setItems] = useState([]);
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const [itemForm, setItemForm] = useState({
+    name: "",
+    category: "food",
+    price: "",
+    description: "",
+    stock: ""
+  });
+  const [itemImage, setItemImage] = useState(null);
+
+  async function loadShopDetails() {
+    try {
+      setErr("");
+      const res = await api.get(`/api/petshops/${id}/details`);
+      setShop(res.data.shop);
+      setPets(res.data.pets || []);
+      setItems(res.data.items || []);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load shop details");
+    }
+  }
+
+  useEffect(() => {
+    loadShopDetails();
+  }, [id]);
+
+  async function submitItem(e) {
+    e.preventDefault();
+    setErr("");
+    setMsg("");
+
+    try {
+      const data = new FormData();
+      data.append("name", itemForm.name);
+      data.append("category", itemForm.category);
+      data.append("price", itemForm.price);
+      data.append("description", itemForm.description);
+      data.append("stock", itemForm.stock);
+      if (itemImage) data.append("image", itemImage);
+
+      await api.post("/api/shop-items", data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+
+      setItemForm({
+        name: "",
+        category: "food",
+        price: "",
+        description: "",
+        stock: ""
+      });
+      setItemImage(null);
+      setMsg("Shop item added successfully");
+      await loadShopDetails();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to add shop item");
+    }
+  }
+
+  if (err && !shop) return <div className="card">{err}</div>;
+  if (!shop) return <div className="card">Loading shop details...</div>;
+
+  const isOwner =
+    user &&
+    user.role === "petshop" &&
+    (user._id === shop._id || user.id === shop._id);
+
+  return (
+    <div style={{ display: "grid", gap: 18 }}>
+      <div className="card">
+        <h2 style={{ marginTop: 0 }}>{shop.name}</h2>
+        <div>{shop.email}</div>
+        <div style={{ marginTop: 8 }}>⭐ {shop.averageRating || 0} / 5</div>
+        <div style={{ opacity: 0.8 }}>Role: {shop.role}</div>
+      </div>
+
+      {err && (
+        <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>
+          {err}
+        </div>
+      )}
+
+      {msg && (
+        <div className="badge" style={{ background: "rgba(0,255,120,0.15)" }}>
+          {msg}
+        </div>
+      )}
+
+      {isOwner && (
+        <div className="card">
+          <h2>Add Shop Item</h2>
+
+          <form
+            onSubmit={submitItem}
+            style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 520 }}
+          >
+            <input
+              className="input"
+              placeholder="Item name"
+              value={itemForm.name}
+              onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })}
+              required
+            />
+
+            <select
+              className="select"
+              value={itemForm.category}
+              onChange={(e) => setItemForm({ ...itemForm, category: e.target.value })}
+            >
+              <option value="food">Food</option>
+              <option value="toy">Toy</option>
+              <option value="accessory">Accessory</option>
+              <option value="medicine">Medicine</option>
+              <option value="other">Other</option>
+            </select>
+
+            <input
+              className="input"
+              type="number"
+              placeholder="Price"
+              value={itemForm.price}
+              onChange={(e) => setItemForm({ ...itemForm, price: e.target.value })}
+              required
+            />
+
+            <input
+              className="input"
+              type="number"
+              placeholder="Stock"
+              value={itemForm.stock}
+              onChange={(e) => setItemForm({ ...itemForm, stock: e.target.value })}
+            />
+
+            <textarea
+              className="input"
+              rows={4}
+              placeholder="Description"
+              value={itemForm.description}
+              onChange={(e) => setItemForm({ ...itemForm, description: e.target.value })}
+            />
+
+            <input
+              className="input"
+              type="file"
+              accept="image/*"
+              onChange={(e) => setItemImage(e.target.files?.[0] || null)}
+            />
+
+            <button className="btn" type="submit">
+              Add Item
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div className="card">
+        <h2>Pets</h2>
+
+        {!pets.length ? (
+          <div style={{ opacity: 0.8 }}>No pets available.</div>
+        ) : (
+          <div className="petGrid" style={{ marginTop: 14 }}>
+            {pets.map((p) => (
+              <div key={p._id} className="petCard">
+                <img
+                  className="petImg"
+                  src={
+                    p.imagePath
+                      ? `http://localhost:5000${p.imagePath}`
+                      : "https://placehold.co/600x400?text=Pet"
+                  }
+                  alt={p.name}
+                />
+                <div className="petTitle">{p.name} — {p.species}</div>
+                <div className="petMeta">Price: {p.price || 0}</div>
+                <div className="petMeta">{p.description}</div>
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => alert(`Contact ${shop.name} to buy ${p.name}`)}
+                  style={{ marginTop: 10 }}
+                >
+                  Buy
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Pet Food, Toys & Items</h2>
+
+        {!items.length ? (
+          <div style={{ opacity: 0.8 }}>No items available.</div>
+        ) : (
+          <div className="petGrid" style={{ marginTop: 14 }}>
+            {items.map((item) => (
+              <div key={item._id} className="petCard">
+                <img
+                  className="petImg"
+                  src={
+                    item.imagePath
+                      ? `http://localhost:5000${item.imagePath}`
+                      : "https://placehold.co/600x400?text=Shop+Item"
+                  }
+                  alt={item.name}
+                />
+                <div className="petTitle">{item.name}</div>
+                <div className="petMeta">Category: {item.category}</div>
+                <div className="petMeta">Price: {item.price}</div>
+                <div className="petMeta">Stock: {item.stock}</div>
+                <div className="petMeta">{item.description}</div>
+
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => alert(`Contact ${shop.name} to buy ${item.name}`)}
+                  style={{ marginTop: 10 }}
+                >
+                  Buy
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -4,6 +4,7 @@ import "./App.css";
 import { api, setAuthToken } from "./api";
 import DocumentsPage from "./components/DocumentsPage";
 import VaccinationCampaignsPage from "./components/VaccinationCampaignsPage";
+import PetShopDetailsPage from "./components/PetShopDetailsPage";
 
 /* ================= AUTH HELPERS ================= */
 function saveAuth(token, user) {
@@ -508,30 +509,10 @@ function PetShops({ user }) {
         review: ""
       });
       setMsg("Rating submitted successfully.");
-      loadShops();
+      await loadShops();
     } catch (e) {
       setErr(e?.response?.data?.message || "Failed to submit rating");
     }
-  }
-
-  function renderStars(shop) {
-    return (
-      <div style={{ display: "flex", gap: 6, marginTop: 10, fontSize: 28 }}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <span
-            key={star}
-            onClick={() => rateShop(shop._id, star)}
-            style={{
-              cursor: user?.role === "user" ? "pointer" : "default",
-              color: star <= Math.round(shop.averageRating || 0) ? "#facc15" : "#9ca3af"
-            }}
-            title={`Rate ${star} star`}
-          >
-            ★
-          </span>
-        ))}
-      </div>
-    );
   }
 
   return (
@@ -555,10 +536,34 @@ function PetShops({ user }) {
       <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
         {shops.map((s) => (
           <div key={s._id} className="badge" style={{ padding: 14 }}>
-            <div style={{ fontWeight: 800, fontSize: 18 }}>{s.name}</div>
+            <Link
+              to={`/petshops/${s._id}`}
+              style={{
+                fontWeight: 800,
+                fontSize: 18,
+                color: "white",
+                textDecoration: "none"
+              }}
+            >
+              {s.name}
+            </Link>
+
             <div style={{ marginTop: 4 }}>{s.email}</div>
 
-            {renderStars(s)}
+            <div style={{ display: "flex", gap: 8, marginTop: 12, fontSize: 30 }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  onClick={() => rateShop(s._id, star)}
+                  style={{
+                    cursor: user?.role === "user" ? "pointer" : "default",
+                    color: star <= Math.round(s.averageRating || 0) ? "#facc15" : "#9ca3af"
+                  }}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
 
             <div style={{ marginTop: 8 }}>
               ⭐ {s.averageRating || 0} / 5
@@ -1121,6 +1126,7 @@ export default function App() {
           <Route path="/admin" element={<AdminPanel user={user} onRefresh={loadPets} />} />
           <Route path="/pets/:id" element={<PetDetails />} />
           <Route path="/petshops" element={<PetShops user={user} />} />
+          <Route path="/petshops/:id" element={<PetShopDetailsPage user={user} />} />
         </Routes>
       </div>
     </BrowserRouter>
