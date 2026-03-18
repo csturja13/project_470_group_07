@@ -121,6 +121,8 @@ export default function PetShopDetailsPage({ user }) {
     user.role === "petshop" &&
     (user._id === shop._id || user.id === shop._id);
 
+  const canBuy = user?.role === "user";
+
   return (
     <div style={{ display: "grid", gap: 18 }}>
       <div className="card">
@@ -309,14 +311,17 @@ export default function PetShopDetailsPage({ user }) {
                 </div>
                 <div className="petMeta">Price: {p.price ?? "Not specified"}</div>
                 <div className="petMeta">{p.description || "No description"}</div>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => alert(`Contact ${shop.name} to buy ${p.name}`)}
-                  style={{ marginTop: 10 }}
-                >
-                  Buy
-                </button>
+
+                {canBuy && (
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => alert(`Thanks for purchasing ${p.name}`)}
+                    style={{ marginTop: 10 }}
+                  >
+                    Buy
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -346,14 +351,17 @@ export default function PetShopDetailsPage({ user }) {
                 <div className="petMeta">Price: {item.price}</div>
                 <div className="petMeta">Stock: {item.stock}</div>
                 <div className="petMeta">{item.description}</div>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => alert(`Contact ${shop.name} to buy ${item.name}`)}
-                  style={{ marginTop: 10 }}
-                >
-                  Buy
-                </button>
+
+                {canBuy && (
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => alert(`Thanks for purchasing ${item.name}`)}
+                    style={{ marginTop: 10 }}
+                  >
+                    Buy
+                  </button>
+                )}
               </div>
             ))}
           </div>

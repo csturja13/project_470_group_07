@@ -53,7 +53,8 @@ router.post("/:id/rate", requireAuth, async (req, res) => {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    if (req.user.role !== "user") {
+    const currentUser = await User.findById(raterId).select("role");
+    if (!currentUser || currentUser.role !== "user") {
       return res.status(403).json({ message: "Only normal users can rate pet shops" });
     }
 
@@ -71,25 +72,30 @@ router.post("/:id/rate", requireAuth, async (req, res) => {
       return res.status(400).json({ message: "You cannot rate yourself" });
     }
 
-    let rating = await Rating.findOne({
-      user: raterId,
-      petshop: petshop._id
-    });
+let rating = await Rating.findOne({
+  rater: raterId,
+  target: petshop._id,
+  targetType: "petshop"
+});
 
-    if (rating) {
-      rating.value = numericValue;
-      rating.review = review || "";
-      await rating.save();
-    } else {
-      rating = await Rating.create({
-        user: raterId,
-        petshop: petshop._id,
-        value: numericValue,
-        review: review || ""
-      });
-    }
+if (rating) {
+  rating.value = numericValue;
+  rating.review = review || "";
+  await rating.save();
+} else {
+  rating = await Rating.create({
+    rater: raterId,
+    target: petshop._id,
+    targetType: "petshop",
+    value: numericValue,
+    review: review || ""
+  });
+}
 
-    const ratings = await Rating.find({ petshop: petshop._id });
+const ratings = await Rating.find({
+  target: petshop._id,
+  targetType: "petshop"
+});
     const totalRatings = ratings.length;
     const averageRating =
       totalRatings > 0
