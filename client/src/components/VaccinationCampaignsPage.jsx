@@ -21,6 +21,7 @@ export default function VaccinationCampaignsPage({ user }) {
 
   async function loadCampaigns() {
     try {
+      setErr("");
       const res = await api.get("/api/vaccination-campaigns", {
         params: {
           status: filterStatus || undefined,
@@ -109,7 +110,7 @@ export default function VaccinationCampaignsPage({ user }) {
             Refresh
           </button>
         </div>
-      </div> 
+      </div>
 
       {user && user.role === "admin" && (
         <div className="card" style={{ marginTop: 16 }}>
@@ -210,52 +211,6 @@ export default function VaccinationCampaignsPage({ user }) {
           </form>
         </div>
       )}
-      <div className="card" style={{ marginTop: 16 }}>
-        <h2>Campaign List</h2>
-
-        {!campaigns.length && <div>No vaccination campaigns found.</div>}
-
-        {campaigns.map((c) => (
-          <div
-            key={c._id}
-            style={{
-              padding: 12,
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 12,
-              marginBottom: 12
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: 18 }}>{c.title}</div>
-            <div>Vaccine: {c.vaccineName}</div>
-            <div>Target Species: {c.targetSpecies}</div>
-            <div>Location: {c.location}</div>
-            <div>Organizer: {c.organizer || "N/A"}</div>
-            <div>Status: {c.status}</div>
-            <div>
-              Campaign Date: {new Date(c.campaignDate).toLocaleDateString()}
-            </div>
-            <div>
-              Last Registration Date:{" "}
-              {c.lastRegistrationDate
-                ? new Date(c.lastRegistrationDate).toLocaleDateString()
-                : "N/A"}
-            </div>
-            <div>Available Slots: {c.availableSlots}</div>
-            <div>Description: {c.description || "N/A"}</div>
-
-            {user && user.role === "admin" && (
-              <button
-                className="btn secondary"
-                style={{ marginTop: 10 }}
-                onClick={() => removeCampaign(c._id)}
-              >
-                Delete
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
-

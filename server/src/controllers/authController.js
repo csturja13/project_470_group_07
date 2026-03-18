@@ -17,6 +17,7 @@ async function signup(req, res) {
     if (!name || !email || !password) {
       return res.status(400).json({ message: "name, email, password required" });
     }
+
     if (password.length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 chars" });
     }
@@ -37,7 +38,15 @@ async function signup(req, res) {
 
     return res.status(201).json({
       token,
-      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
+      user: {
+        _id: user._id,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        averageRating: user.averageRating,
+        totalRatings: user.totalRatings
+      }
     });
   } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });
@@ -47,7 +56,10 @@ async function signup(req, res) {
 async function login(req, res) {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: "email, password required" });
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "email, password required" });
+    }
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
@@ -59,7 +71,15 @@ async function login(req, res) {
 
     return res.json({
       token,
-      user: { _id: user._id, name: user.name, email: user.email, role: user.role }
+      user: {
+        _id: user._id,
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        averageRating: user.averageRating,
+        totalRatings: user.totalRatings
+      }
     });
   } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });

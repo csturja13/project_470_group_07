@@ -1,12 +1,14 @@
-const router = require("express").Router();
-const { createPet, listPets, getPetById } = require("../controllers/petController");
-const { upload } = require("../middlewares/upload");
+const express = require("express");
+const router = express.Router();
+
+const { createPet, listPets, getPetById, listMyPets, deletePet } = require("../controllers/petController");
 const { requireAuth } = require("../middlewares/auth");
+const upload = require("../middlewares/upload");
 
 router.get("/", listPets);
+router.get("/mine", requireAuth, listMyPets);
 router.get("/:id", getPetById);
-
-// key name must be "image"
 router.post("/", requireAuth, upload.single("image"), createPet);
+router.delete("/:id", requireAuth, deletePet);
 
 module.exports = router;

@@ -2,12 +2,42 @@ const mongoose = require("mongoose");
 
 const petSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true, trim: true },
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
 
     species: {
       type: String,
       required: true,
       enum: ["Dog", "Cat", "Bird", "Other"]
+    },
+
+    sex: {
+      type: String,
+      enum: ["Male", "Female"],
+      default: "Male"
+    },
+
+    age: {
+      type: Number,
+      default: null
+    },
+
+    price: {
+      type: Number,
+      default: null
+    },
+
+    description: {
+      type: String,
+      default: ""
+    },
+
+    imagePath: {
+      type: String,
+      default: ""
     },
 
     approvalStatus: {
@@ -19,7 +49,6 @@ const petSchema = new mongoose.Schema(
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      //required: true
       default: null
     }
   },

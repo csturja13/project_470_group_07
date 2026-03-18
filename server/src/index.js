@@ -4,23 +4,23 @@ const cors = require("cors");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
-
 const { connectDB } = require("./config/db");
+
 const petRoutes = require("./routes/petRoutes");
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
-
-const documentRoutes = require("./routes/documentroutes");
+const documentRoutes = require("./routes/documentRoutes");
+const userRoutes = require("./routes/userRoutes");
+const petshopRoutes = require("./routes/petshopRoutes");
 const vaccinationCampaignRoutes = require("./routes/vaccinationCampaignRoutes");
+const shopItemRoutes = require("./routes/shopItemRoutes");
+
 const app = express();
-
-
 
 app.use(express.json());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
-app.use("/api/admin", adminRoutes);
 
-// ✅ Serve uploaded images from server/uploads
+app.use("/api/admin", adminRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 app.get("/", (req, res) => {
@@ -29,19 +29,19 @@ app.get("/", (req, res) => {
 
 app.use("/api/pets", petRoutes);
 app.use("/api/auth", authRoutes);
-
 app.use("/api/documents", documentRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/petshops", petshopRoutes);
 app.use("/api/vaccination-campaigns", vaccinationCampaignRoutes);
-
+app.use("/api/shop-items", shopItemRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: process.env.CLIENT_ORIGIN }
 });
 
-// for later notifications feature
 io.on("connection", (socket) => {
-  console.log("🔌 Socket connected:", socket.id);
+  console.log(" Socket connected:", socket.id);
   socket.on("join", ({ userId }) => {
     if (userId) socket.join(`user:${userId}`);
   });

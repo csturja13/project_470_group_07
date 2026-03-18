@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from "react-router-dom";
 import "./App.css";
 import { api, setAuthToken } from "./api";
-
 import DocumentsPage from "./components/DocumentsPage";
 import VaccinationCampaignsPage from "./components/VaccinationCampaignsPage";
-
+import PetShopDetailsPage from "./components/PetShopDetailsPage";
+import useDeletePet from "./hooks/useDeletePet";
 
 /* ================= AUTH HELPERS ================= */
-
 function saveAuth(token, user) {
   localStorage.setItem("token", token);
   localStorage.setItem("user", JSON.stringify(user));
@@ -35,23 +34,89 @@ function Navbar({
 }) {
   return (
     <div className="card" style={{ marginBottom: 14 }}>
-      <div className="navbarTop">
-        <div className="navLinks">
-          <div style={{ fontSize: 22 }}>🐾</div>
-          <b style={{ fontSize: 25 }}>Pawlytics</b>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 14
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 12
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 18,
+              flexWrap: "wrap"
+            }}
+          >
+            <div style={{ fontSize: 22 }}>🐾</div>
+            <b style={{ fontSize: 25 }}>Pawlytics</b>
 
-          <Link to="/">Home</Link>
-          {user && user.role === "admin" && <Link to="/admin">Admin Panel</Link>}
+            <Link to="/">Home</Link>
+            {user && <Link to="/petshops">Pet Shops</Link>}
+            {user && <Link to="/profile">Profile</Link>}
+            {user && <Link to="/documents">Documents</Link>}
+            {user && <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>}
 
+<<<<<<< HEAD
           {!user && <Link to="/signup">Signup</Link>}
           {!user && <Link to="/login">Login</Link>}
           {user && <Link to="/profile">Profile</Link>}
           {user && <Link to="/documents">Documents</Link>}
           <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>
         
+=======
+            {!user && <Link to="/signup">Signup</Link>}
+            {!user && <Link to="/login">Login</Link>}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap"
+            }}
+          >
+            {user ? (
+              <>
+                {user.role === "admin" && (
+                  <Link to="/admin" className="btn secondary">
+                    Admin Panel
+                  </Link>
+                )}
+
+                <span className="badge">
+                  {user.name} ({user.role})
+                </span>
+
+                <button className="btn" onClick={onLogout}>
+                  Logout
+                </button>
+              </>
+            ) : (
+              <span className="badge">Not logged in</span>
+            )}
+          </div>
+>>>>>>> b58eac600b0004b95e848a336fac219746b2e01e
         </div>
 
-        <div className="navSearchLine">
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap"
+          }}
+        >
           <input
             className="input"
             placeholder="Search pets… (Enter)"
@@ -60,12 +125,14 @@ function Navbar({
             onKeyDown={(e) => {
               if (e.key === "Enter") onSearchEnter();
             }}
+            style={{ flex: "1 1 320px", minWidth: 260 }}
           />
 
           <select
             className="select"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            style={{ minWidth: 220 }}
           >
             <option value="">Category → All</option>
             <option value="Dog">Category → Dog</option>
@@ -74,40 +141,28 @@ function Navbar({
             <option value="Other">Category → Other</option>
           </select>
 
-          <select className="select" value={sort} onChange={(e) => setSort(e.target.value)}>
+          <select
+            className="select"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            style={{ minWidth: 220 }}
+          >
             <option value="">Sort → Default</option>
             <option value="price_asc">Sort → Price: Low → High</option>
             <option value="price_desc">Sort → Price: High → Low</option>
           </select>
         </div>
-
-        <div className="navRight">
-          {user ? (
-            <>
-              <span className="badge">
-                {user.name} ({user.role})
-              </span>
-              <button className="btn secondary" onClick={onLogout}>
-                Logout
-              </button>
-            </>
-          ) : (
-            <span className="badge">Not logged in</span>
-          )}
-        </div>
       </div>
 
       {!user && (
-        <div className="navWelcome">
-          Welcome to Pawlytics 🐾 <span style={{ opacity: 0.85 }}>Signup/Login to create pet posts.</span>
+        <div style={{ marginTop: 14, opacity: 0.9 }}>
+          Welcome to Pawlytics. Signup/Login to create pet posts.
         </div>
       )}
     </div>
   );
 }
-
-/*================= REUSABLE CARD ================= */
-
+/* ================= REUSABLE CARD ================= */
 function PetCard({ p }) {
   return (
     <div className="petCard" key={p._id}>
@@ -126,7 +181,11 @@ function PetCard({ p }) {
       </div>
 
       <div className="petMeta">
-        Sex: {p.sex || "Not specified"} • Age: {p.age || "Not specified"} • Price: {p.price || "Not specified"}
+        Owner: {p.owner?.name || "Unknown"}
+      </div>
+
+      <div className="petMeta">
+        Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
       </div>
 
       <div className="petMeta">{p.description}</div>
@@ -139,10 +198,9 @@ function PetCard({ p }) {
       </div>
     </div>
   );
-}
+}  
 
 /* ================= HOME (FEED FIRST) ================= */
-
 function Home({ user, pets, loading, error, onRefresh }) {
   const myPets = user
     ? pets.filter((p) => p.owner && p.owner._id === user._id)
@@ -159,12 +217,10 @@ function Home({ user, pets, loading, error, onRefresh }) {
           <h2 style={{ margin: 0 }}>
             {user ? "Pet Feed" : "All Pet Posts"}
           </h2>
-          <button className="btn" type="button" onClick={onRefresh}>
-            Refresh
-          </button>
         </div>
 
-        {loading && <div style={{ marginTop: 12, opacity: 0.85 }}>Loading pets…</div>}
+        {loading && <div style={{ marginTop: 12 }}>Loading pets…</div>}
+
         {error && (
           <div className="badge" style={{ background: "rgba(255,0,0,0.15)", marginTop: 12 }}>
             {error}
@@ -222,7 +278,6 @@ function Home({ user, pets, loading, error, onRefresh }) {
 }
 
 /* ================= CREATE POST ================= */
-
 function CreatePet({ user, onCreated }) {
   const [imageFile, setImageFile] = useState(null);
   const [form, setForm] = useState({
@@ -233,52 +288,66 @@ function CreatePet({ user, onCreated }) {
     price: "",
     description: ""
   });
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
 
   async function submitPet(e) {
     e.preventDefault();
+    setErr("");
+    setMsg("");
 
-    const data = new FormData();
-    data.append("name", form.name);
-    data.append("species", form.species);
-    data.append("sex", form.sex);
-    data.append("age", form.age === "" ? "" : String(form.age));
-    data.append("price", form.price === "" ? "" : String(form.price));
-    data.append("description", form.description);
-    if (imageFile) data.append("image", imageFile);
+    try {
+      const data = new FormData();
+      data.append("name", form.name);
+      data.append("species", form.species);
+      data.append("sex", form.sex);
+      data.append("age", form.age === "" ? "" : String(form.age));
+      data.append("price", form.price === "" ? "" : String(form.price));
+      data.append("description", form.description);
+      if (imageFile) data.append("image", imageFile);
 
-    await api.post("/api/pets", data, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
+      await api.post("/api/pets", data, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
 
-    setForm({
-      name: "",
-      species: "Dog",
-      sex: "Male",
-      age: "",
-      price: "",
-      description: ""
-    });
-    setImageFile(null);
+      setForm({
+        name: "",
+        species: "Dog",
+        sex: "Male",
+        age: "",
+        price: "",
+        description: ""
+      });
+      setImageFile(null);
+      setMsg("Pet post submitted");
 
-    const fileInput = document.getElementById("petImageInput");
-    if (fileInput) fileInput.value = "";
+      const fileInput = document.getElementById("petImageInput");
+      if (fileInput) fileInput.value = "";
 
-    onCreated();
+      onCreated();
+    } catch (e2) {
+      setErr(e2?.response?.data?.message || "Failed to submit pet");
+    }
   }
+
+  if (!user) return null;
 
   return (
     <div className="card">
-      <h2 style={{ marginTop: 0 }}>Create Pet Post</h2>
+      <h2>Create Pet Post</h2>
+
+      {err && <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>{err}</div>}
+      {msg && <div className="badge" style={{ background: "rgba(0,255,120,0.15)" }}>{msg}</div>}
 
       <form
-  onSubmit={submitPet}
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: 14,
-    maxWidth: 500
-  }}
->
+        onSubmit={submitPet}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          maxWidth: 500
+        }}
+      >
         <input
           className="input"
           placeholder="Pet name"
@@ -332,7 +401,8 @@ function CreatePet({ user, onCreated }) {
         />
 
         <textarea
-          className="textarea"
+          className="input"
+          rows={4}
           placeholder="Description"
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -349,11 +419,12 @@ function CreatePet({ user, onCreated }) {
 }
 
 /* ================= PET DETAILS ================= */
-function PetDetails() {
+function PetDetails({ user, onRefresh }) {
   const { id } = useParams();
   const [pet, setPet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const deletePet = useDeletePet(onRefresh);
 
   useEffect(() => {
     async function loadPet() {
@@ -372,6 +443,8 @@ function PetDetails() {
 
     loadPet();
   }, [id]);
+
+  const isOwner = user && pet?.owner && pet.owner._id === user._id;
 
   if (loading) return <div className="card">Loading pet details...</div>;
   if (err) return <div className="card">{err}</div>;
@@ -396,11 +469,18 @@ function PetDetails() {
           marginBottom: 14
         }}
       />
+      <div><b>Sex:</b>{pet.sex || "Not specified"}</div>
+      <div><b>Age:</b> {pet.age ?? "Not specified"}</div>
+      <div><b>Price:</b> {pet.price ?? "Not specified"}</div>
+      <div><b>Description:</b> {pet.description || "No description"}</div>
 
-      <div><b>Age:</b> {pet.age}</div>
-      <div><b>Price:</b> {pet.price}</div>
-      <div><b>Description:</b> {pet.description}</div>
-      <div><b>Status:</b> {pet.approvalStatus}</div>
+      {isOwner && (
+        <div style={{ marginTop: 16 }}>
+          <button className="btn secondary" onClick={() => deletePet(id)}>
+            Delete Post
+          </button>
+        </div>
+      )}
 
       <hr style={{ margin: "16px 0" }} />
 
@@ -411,11 +491,116 @@ function PetDetails() {
   );
 }
 
-/* ================= SIGNUP ================= */
+/* ================= PET SHOPS PAGE ================= */
+function PetShops({ user }) {
+  const [shops, setShops] = useState([]);
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
 
+  async function loadShops() {
+    try {
+      setErr("");
+      const res = await api.get("/api/petshops");
+      setShops(res.data);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load pet shops");
+    }
+  }
+
+  useEffect(() => {
+    loadShops();
+  }, []);
+
+  async function rateShop(shopId, value) {
+    if (!user) {
+      setErr("Please login first.");
+      return;
+    }
+
+    if (user.role !== "user") {
+      setErr("Only normal users can rate pet shops.");
+      return;
+    }
+
+    try {
+      setErr("");
+      setMsg("");
+      await api.post(`/api/petshops/${shopId}/rate`, {
+        value,
+        review: ""
+      });
+      setMsg("Rating submitted successfully.");
+      await loadShops();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to submit rating");
+    }
+  }
+
+  return (
+    <div className="card">
+      <h2>Pet Shops</h2>
+
+      {err && (
+        <div className="badge" style={{ background: "rgba(255,0,0,0.15)", marginTop: 12 }}>
+          {err}
+        </div>
+      )}
+
+      {msg && (
+        <div className="badge" style={{ background: "rgba(0,255,120,0.15)", marginTop: 12 }}>
+          {msg}
+        </div>
+      )}
+
+      {!err && !shops.length && <div style={{ marginTop: 10 }}>No pet shops found.</div>}
+
+      <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
+        {shops.map((s) => (
+          <div key={s._id} className="badge" style={{ padding: 14 }}>
+            <Link
+              to={`/petshops/${s._id}`}
+              style={{
+                fontWeight: 800,
+                fontSize: 18,
+                color: "white",
+                textDecoration: "none"
+              }}
+            >
+              {s.name}
+            </Link>
+
+            <div style={{ marginTop: 4 }}>{s.email}</div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 12, fontSize: 30 }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  onClick={() => rateShop(s._id, star)}
+                  style={{
+                    cursor: user?.role === "user" ? "pointer" : "default",
+                    color: star <= Math.round(s.averageRating || 0) ? "#facc15" : "#9ca3af"
+                  }}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 8 }}>
+              ⭐ {s.averageRating || 0} / 5
+            </div>
+
+            <div style={{ marginTop: 4, opacity: 0.8 }}>Role: {s.role}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+/* ================= SIGNUP ================= */
 function Signup({ onAuth }) {
   const nav = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "user" });
   const [err, setErr] = useState("");
 
   async function submit(e) {
@@ -442,12 +627,36 @@ function Signup({ onAuth }) {
       )}
 
       <form onSubmit={submit} style={{ display: "grid", gap: 10, marginTop: 10 }}>
-        <input className="input" placeholder="Name" value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        <input className="input" placeholder="Email" value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-        <input className="input" type="password" placeholder="Password (min 6)" value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+        <input
+          className="input"
+          placeholder="Name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          required
+        />
+        <input
+          className="input"
+          placeholder="Email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          required
+        />
+        <input
+          className="input"
+          type="password"
+          placeholder="Password (min 6)"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          required
+        />
+        <select
+          className="input"
+          value={form.role}
+          onChange={(e) => setForm({ ...form, role: e.target.value })}
+        >
+          <option value="user">User</option>
+          <option value="petshop">Pet Shop</option>
+        </select>
         <button className="btn" type="submit">Create Account</button>
       </form>
     </div>
@@ -455,7 +664,6 @@ function Signup({ onAuth }) {
 }
 
 /* ================= LOGIN ================= */
-
 function Login({ onAuth }) {
   const nav = useNavigate();
   const [isAdminLogin, setIsAdminLogin] = useState(false);
@@ -488,10 +696,18 @@ function Login({ onAuth }) {
       <h2>{isAdminLogin ? "Admin Login" : "User Login"}</h2>
 
       <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-        <button type="button" className={!isAdminLogin ? "btn" : "btn secondary"} onClick={() => setIsAdminLogin(false)}>
+        <button
+          type="button"
+          className={!isAdminLogin ? "btn" : "btn secondary"}
+          onClick={() => setIsAdminLogin(false)}
+        >
           User Login
         </button>
-        <button type="button" className={isAdminLogin ? "btn" : "btn secondary"} onClick={() => setIsAdminLogin(true)}>
+        <button
+          type="button"
+          className={isAdminLogin ? "btn" : "btn secondary"}
+          onClick={() => setIsAdminLogin(true)}
+        >
           Admin Login
         </button>
       </div>
@@ -503,34 +719,238 @@ function Login({ onAuth }) {
       )}
 
       <form onSubmit={submit} style={{ display: "grid", gap: 10, marginTop: 10 }}>
-        <input className="input" placeholder="Email" value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-        <input className="input" type="password" placeholder="Password" value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+        <input
+          className="input"
+          placeholder="Email"
+          value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          required
+        />
+        <input
+          className="input"
+          type="password"
+          placeholder="Password"
+          value={form.password}
+          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          required
+        />
         <button className="btn" type="submit">Login</button>
       </form>
     </div>
   );
 }
 
-/* ================= PROFILE ================= */
+/* ================= PROFILE WITH RATINGS ================= */
+function Profile({ user, onUserRefresh }) {
+  const [me, setMe] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [petshops, setPetshops] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedPetshop, setSelectedPetshop] = useState("");
+  const [userRating, setUserRating] = useState(5);
+  const [petshopRating, setPetshopRating] = useState(5);
+  const [userReview, setUserReview] = useState("");
+  const [petshopReview, setPetshopReview] = useState("");
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
 
-function Profile({ user }) {
+  async function loadAll() {
+    try {
+      setErr("");
+
+      const [meRes, usersRes, petshopsRes] = await Promise.all([
+        api.get("/api/auth/me"),
+        api.get("/api/users"),
+        api.get("/api/petshops")
+      ]);
+
+      setMe(meRes.data);
+      setUsers(usersRes.data.filter((u) => u._id !== meRes.data._id));
+      setPetshops(petshopsRes.data.filter((p) => p._id !== meRes.data._id));
+
+      const updatedUser = {
+        ...(user || {}),
+        ...meRes.data
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      onUserRefresh?.(updatedUser);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load profile data");
+    }
+  }
+
+  useEffect(() => {
+    if (user) loadAll();
+  }, [user]);
+
+  async function submitUserRating(e) {
+    e.preventDefault();
+    setMsg("");
+    setErr("");
+
+    try {
+      await api.post(`/api/users/${selectedUser}/rate`, {
+        value: Number(userRating),
+        review: userReview
+      });
+      setMsg("User rating submitted");
+      setUserReview("");
+      setSelectedUser("");
+      await loadAll();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to rate user");
+    }
+  }
+
+  async function submitPetshopRating(e) {
+    e.preventDefault();
+    setMsg("");
+    setErr("");
+
+    try {
+      await api.post(`/api/petshops/${selectedPetshop}/rate`, {
+        value: Number(petshopRating),
+        review: petshopReview
+      });
+      setMsg("Pet shop rating submitted");
+      setPetshopReview("");
+      setSelectedPetshop("");
+      await loadAll();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to rate pet shop");
+    }
+  }
+
   if (!user) return <div className="card">Please login first.</div>;
 
   return (
-    <div className="card">
-      <h2>Profile</h2>
-      <div><b>Name:</b> {user.name}</div>
-      <div><b>Email:</b> {user.email}</div>
-      <div><b>Role:</b> {user.role}</div>
+    <div style={{ display: "grid", gap: 20 }}>
+      <div className="card">
+        <h2>Profile</h2>
+
+        {err && <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>{err}</div>}
+        {msg && <div className="badge" style={{ background: "rgba(0,255,120,0.15)" }}>{msg}</div>}
+
+        <div><b>Name:</b> {me?.name || user.name}</div>
+        <div><b>Email:</b> {me?.email || user.email}</div>
+        <div><b>Role:</b> {me?.role || user.role}</div>
+        <div><b>Average rating:</b> ⭐ {me?.averageRating ?? 0} / 5</div>
+        <div><b>Total ratings:</b> {me?.totalRatings ?? 0}</div>
+      </div>
+
+      <div className="card">
+        <h2>Rate a User</h2>
+
+        {!users.length ? (
+          <div style={{ opacity: 0.8 }}>No users available.</div>
+        ) : (
+          <form onSubmit={submitUserRating} style={{ display: "grid", gap: 10 }}>
+            <select
+              className="input"
+              value={selectedUser}
+              onChange={(e) => setSelectedUser(e.target.value)}
+              required
+            >
+              <option value="">Select user</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name} — ⭐ {u.averageRating || 0} ({u.totalRatings || 0})
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="input"
+              value={userRating}
+              onChange={(e) => setUserRating(e.target.value)}
+            >
+              <option value={1}>1 Star</option>
+              <option value={2}>2 Stars</option>
+              <option value={3}>3 Stars</option>
+              <option value={4}>4 Stars</option>
+              <option value={5}>5 Stars</option>
+            </select>
+
+            <textarea
+              className="input"
+              placeholder="Write review"
+              value={userReview}
+              onChange={(e) => setUserReview(e.target.value)}
+            />
+
+            <button className="btn" type="submit">Submit User Rating</button>
+          </form>
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Rate a Pet Shop</h2>
+
+        {!petshops.length ? (
+          <div style={{ opacity: 0.8 }}>No pet shops available.</div>
+        ) : (
+          <form onSubmit={submitPetshopRating} style={{ display: "grid", gap: 10 }}>
+            <select
+              className="input"
+              value={selectedPetshop}
+              onChange={(e) => setSelectedPetshop(e.target.value)}
+              required
+            >
+              <option value="">Select pet shop</option>
+              {petshops.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.name} — ⭐ {p.averageRating || 0} ({p.totalRatings || 0})
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="input"
+              value={petshopRating}
+              onChange={(e) => setPetshopRating(e.target.value)}
+            >
+              <option value={1}>1 Star</option>
+              <option value={2}>2 Stars</option>
+              <option value={3}>3 Stars</option>
+              <option value={4}>4 Stars</option>
+              <option value={5}>5 Stars</option>
+            </select>
+
+            <textarea
+              className="input"
+              placeholder="Write review"
+              value={petshopReview}
+              onChange={(e) => setPetshopReview(e.target.value)}
+            />
+
+            <button className="btn" type="submit">Submit Pet Shop Rating</button>
+          </form>
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Pet Shop Ratings</h2>
+
+        {!petshops.length ? (
+          <div style={{ opacity: 0.8 }}>No pet shops found.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            {petshops.map((p) => (
+              <div key={p._id} className="badge" style={{ padding: 12 }}>
+                <div><b>{p.name}</b></div>
+                <div>⭐ {p.averageRating || 0} / 5</div>
+                <div>{p.totalRatings || 0} review(s)</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 /* ================= ADMIN PANEL ================= */
-
-function AdminPanel({ user }) {
+function AdminPanel({ user, onRefresh }) {
   const [pending, setPending] = useState([]);
   const [err, setErr] = useState("");
 
@@ -548,15 +968,24 @@ function AdminPanel({ user }) {
     loadPending();
   }, []);
 
-  async function setStatus(id, status) {
-    await api.patch(`/api/admin/pets/${id}/status`, { status });
-    await loadPending();
+  async function approve(id) {
+    try {
+      await api.patch(`/api/admin/pets/${id}/approve`);
+      await loadPending();
+      onRefresh?.();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to approve pet");
+    }
   }
 
-  async function remove(id) {
-    if (!confirm("Delete this post?")) return;
-    await api.delete(`/api/admin/pets/${id}`);
-    await loadPending();
+  async function reject(id) {
+    try {
+      await api.delete(`/api/admin/pets/${id}/reject`);
+      await loadPending();
+      onRefresh?.();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to reject pet");
+    }
   }
 
   if (!user) return <div className="card">Please login as admin.</div>;
@@ -575,25 +1004,42 @@ function AdminPanel({ user }) {
       {!pending.length && <div style={{ opacity: 0.8, marginTop: 10 }}>No pending posts.</div>}
 
       {pending.map((p) => (
-        <div key={p._id} style={{ marginTop: 15, display: "flex", gap: 15, alignItems: "center" }}>
+        <div
+          key={p._id}
+          style={{ marginTop: 15, display: "flex", gap: 15, alignItems: "center" }}
+        >
           <img
-            src={p.imagePath ? `http://localhost:5000${p.imagePath}` : "https://placehold.co/240x180?text=Pet"}
+            src={
+              p.imagePath
+                ? `http://localhost:5000${p.imagePath}`
+                : "https://placehold.co/240x180?text=Pet"
+            }
             alt={p.name}
             style={{ width: 220, height: 160, objectFit: "cover", borderRadius: 14 }}
           />
 
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 900, fontSize: 18 }}>{p.name} — {p.species}</div>
+            <div style={{ fontWeight: 900, fontSize: 18 }}>
+              {p.name} — {p.species}
+            </div>
+
+            <div style={{ opacity: 0.85 }}>
+              Owner: {p.owner?.name || "Unknown"}
+            </div>
+
             <div style={{ opacity: 0.85 }}>
               Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
             </div>
+
             <div style={{ opacity: 0.9 }}>{p.description}</div>
-            <div style={{ opacity: 0.7, fontSize: 13 }}>Status: {p.approvalStatus}</div>
+
+            <div style={{ opacity: 0.7, fontSize: 13 }}>
+              Status: {p.approvalStatus}
+            </div>
 
             <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-              <button className="btn" onClick={() => setStatus(p._id, "Approved")}>Approve</button>
-              <button className="btn secondary" onClick={() => setStatus(p._id, "Rejected")}>Reject</button>
-              <button className="btn secondary" onClick={() => remove(p._id)}>Delete</button>
+              <button className="btn" onClick={() => approve(p._id)}>Approve</button>
+              <button className="btn secondary" onClick={() => reject(p._id)}>Reject</button>
             </div>
           </div>
         </div>
@@ -601,9 +1047,7 @@ function AdminPanel({ user }) {
     </div>
   );
 }
-
 /* ================= MAIN APP ================= */
-
 export default function App() {
   const [user, setUser] = useState(() => {
     const raw = localStorage.getItem("user");
@@ -613,7 +1057,6 @@ export default function App() {
   const [searchText, setSearchText] = useState("");
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
-
   const [petsRaw, setPetsRaw] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -626,6 +1069,7 @@ export default function App() {
   async function loadPets() {
     setLoading(true);
     setErr("");
+
     try {
       const res = await api.get("/api/pets", {
         params: { q: searchText, species: category }
@@ -639,13 +1083,11 @@ export default function App() {
   }
 
   useEffect(() => {
-    loadPets();
-    // eslint-disable-next-line
-  }, []);
+  loadPets();
+}, []);
 
   useEffect(() => {
     loadPets();
-    // eslint-disable-next-line
   }, [category]);
 
   const pets = useMemo(() => {
@@ -665,6 +1107,10 @@ export default function App() {
     setUser(null);
   }
 
+  function onUserRefresh(userObj) {
+    setUser(userObj);
+  }
+
   return (
     <BrowserRouter>
       <div className="container">
@@ -681,6 +1127,7 @@ export default function App() {
         />
 
         <Routes>
+<<<<<<< HEAD
         <Route
           path="/"
           element={
@@ -703,6 +1150,30 @@ export default function App() {
         <Route path="/admin" element={<AdminPanel user={user} />} />
         <Route path="/pets/:id" element={<PetDetails />} />
       </Routes>
+=======
+          <Route
+            path="/"
+            element={
+              <Home
+                user={user}
+                pets={pets}
+                loading={loading}
+                error={err}
+                onRefresh={loadPets}
+              />
+            }
+          />
+          <Route path="/signup" element={<Signup onAuth={onAuth} />} />
+          <Route path="/login" element={<Login onAuth={onAuth} />} />
+          <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
+          <Route path="/documents" element={<DocumentsPage user={user} />} />
+          <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
+          <Route path="/admin" element={<AdminPanel user={user} onRefresh={loadPets} />} />
+          <Route path="/pets/:id" element={<PetDetails user={user} onRefresh={loadPets} />} />
+          <Route path="/petshops" element={<PetShops user={user} />} />
+          <Route path="/petshops/:id" element={<PetShopDetailsPage user={user} />} />
+        </Routes>
+>>>>>>> b58eac600b0004b95e848a336fac219746b2e01e
       </div>
     </BrowserRouter>
   );

@@ -6,12 +6,14 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, trim: true, lowercase: true, unique: true },
     passwordHash: { type: String, required: true },
 
-    // ready for your 5 interfaces
     role: {
       type: String,
       enum: ["user", "admin", "petshop", "vet", "rescue", "delivery"],
       default: "user"
-    }
+    },
+
+    averageRating: { type: Number, default: 0, min: 0, max: 5 },
+    totalRatings: { type: Number, default: 0 }
   },
   { timestamps: true }
 );

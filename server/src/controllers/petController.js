@@ -14,21 +14,23 @@ async function createPet(req, res) {
     const pet = await Pet.create({
       name,
       species,
-      sex,
-      age: Number(age || 0),
-      price: Number(price || 0),
+      sex: sex || "Male",
+      age: age === "" || age === undefined ? null : Number(age),
+      price: price === "" || price === undefined ? null : Number(price),
       description: description || "",
       imagePath,
       approvalStatus: "Pending",
-      owner: req.user.userId
+      owner: req.user?.userId || null
     });
 
     return res.status(201).json(pet);
   } catch (err) {
+    console.error("Create pet error:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 }
 
+// Get single pet by ID with owner info
 async function getPetById(req, res) {
   try {
     const pet = await Pet.findById(req.params.id).populate("owner", "name email");
@@ -39,19 +41,27 @@ async function getPetById(req, res) {
 
     return res.json(pet);
   } catch (err) {
+    console.error("Get pet by id error:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 }
 
-// List pets with search + filter
+// Homepage / public list: only APPROVED pets
 async function listPets(req, res) {
   try {
-    const { status, q, species } = req.query;
+    const { q, species } = req.query;
 
-    const filter = {};
-    if (status) filter.approvalStatus = status;
-    if (q) filter.name = { $regex: q, $options: "i" };
-    if (species) filter.species = species;
+    const filter = {
+      approvalStatus: "Approved"
+    };
+
+    if (q) {
+      filter.name = { $regex: q, $options: "i" };
+    }
+
+    if (species) {
+      filter.species = species;
+    }
 
     const pets = await Pet.find(filter)
       .populate("owner", "name email")
@@ -59,8 +69,52 @@ async function listPets(req, res) {
 
     return res.json(pets);
   } catch (err) {
+    console.error("List pets error:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 }
 
-module.exports = { createPet, listPets, getPetById };
+// Logged in user's own pets (can include pending)
+async function listMyPets(req, res) {
+  try {
+    const pets = await Pet.find({ owner: req.user.userId })
+      .populate("owner", "name email")
+      .sort({ createdAt: -1 });
+
+    return res.json(pets);
+  } catch (err) {
+    console.error("List my pets error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+
+async function deletePet(req, res) {
+  try {
+    const { id } = req.params;
+
+    const pet = await Pet.findById(id);
+
+    if (!pet) {
+      return res.status(404).json({ message: "Pet not found" });
+    }
+
+    if (!pet.owner || pet.owner.toString() !== req.user.userId) {
+      return res.status(403).json({ message: "You can delete only your own pet post" });
+    }
+
+    await Pet.findByIdAndDelete(id);
+
+    return res.json({ message: "Pet deleted successfully" });
+  } catch (err) {
+    console.error("Delete pet error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+
+module.exports = {
+  createPet,
+  listPets,
+  listMyPets,
+  getPetById,
+  deletePet
+};
