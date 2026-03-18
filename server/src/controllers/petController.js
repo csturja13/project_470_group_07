@@ -88,9 +88,33 @@ async function listMyPets(req, res) {
   }
 }
 
+async function deletePet(req, res) {
+  try {
+    const { id } = req.params;
+
+    const pet = await Pet.findById(id);
+
+    if (!pet) {
+      return res.status(404).json({ message: "Pet not found" });
+    }
+
+    if (!pet.owner || pet.owner.toString() !== req.user.userId) {
+      return res.status(403).json({ message: "You can delete only your own pet post" });
+    }
+
+    await Pet.findByIdAndDelete(id);
+
+    return res.json({ message: "Pet deleted successfully" });
+  } catch (err) {
+    console.error("Delete pet error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+
 module.exports = {
   createPet,
   listPets,
   listMyPets,
-  getPetById
+  getPetById,
+  deletePet
 };
