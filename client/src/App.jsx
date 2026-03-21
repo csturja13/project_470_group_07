@@ -6,6 +6,7 @@ import DocumentsPage from "./components/DocumentsPage";
 import VaccinationCampaignsPage from "./components/VaccinationCampaignsPage";
 import PetShopDetailsPage from "./components/PetShopDetailsPage";
 import useDeletePet from "./hooks/useDeletePet";
+import useAdoptPet from "./hooks/useAdoptPet";
 
 /* ================= AUTH HELPERS ================= */
 function saveAuth(token, user) {
@@ -416,6 +417,7 @@ function PetDetails({ user, onRefresh }) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const deletePet = useDeletePet(onRefresh);
+  const requestAdoption = useAdoptPet();
 
   useEffect(() => {
     async function loadPet() {
@@ -436,6 +438,7 @@ function PetDetails({ user, onRefresh }) {
   }, [id]);
 
   const isOwner = user && pet?.owner && pet.owner._id === user._id;
+  const canRequestAdoption = user && pet?.owner && pet.owner._id !== user._id;
 
   if (loading) return <div className="card">Loading pet details...</div>;
   if (err) return <div className="card">{err}</div>;
@@ -445,39 +448,59 @@ function PetDetails({ user, onRefresh }) {
     <div className="card">
       <h2>{pet.name} — {pet.species}</h2>
 
-      <img
+      <div className="petDetailsWrap">
+
+      {/* LEFT SIDE */}
+      <div className="petDetailsLeft">
+        <img
         src={
-          pet.imagePath
+            pet.imagePath
             ? `http://localhost:5000${pet.imagePath}`
             : "https://placehold.co/600x400?text=Pet"
-        }
+          }
         alt={pet.name}
-        style={{
-          width: "100%",
-          maxWidth: 500,
-          borderRadius: 14,
-          objectFit: "cover",
-          marginBottom: 14
-        }}
-      />
-      <div><b>Sex:</b>{pet.sex || "Not specified"}</div>
-      <div><b>Age:</b> {pet.age ?? "Not specified"}</div>
-      <div><b>Price:</b> {pet.price ?? "Not specified"}</div>
-      <div><b>Description:</b> {pet.description || "No description"}</div>
+        className="petDetailsImg"
+        />
+        <div className="petDetailsActions">
+          {canRequestAdoption && (
+          <button
+            className="btn"
+            onClick={() => requestAdoption(id)}
+          >
+            Request to Adopt
+          </button>
+        )}
 
-      {isOwner && (
-        <div style={{ marginTop: 16 }}>
-          <button className="btn secondary" onClick={() => deletePet(id)}>
+        {isOwner && (
+          <button
+            className="btn secondary"
+            onClick={() => deletePet(id)}
+          >
             Delete Post
           </button>
+        )}
         </div>
-      )}
+      </div>
 
-      <hr style={{ margin: "16px 0" }} />
+      {/* RIGHT SIDE */}
+      <div className="petDetailsRight">
+        {/* Pet details */}
+        <div><b>Sex:</b> {pet.sex || "Not specified"}</div>
+        <div><b>Age:</b> {pet.age ?? "Not specified"}</div>
+        <div><b>Price:</b> {pet.price ?? "Not specified"}</div>
+        <div><b>Description:</b> {pet.description || "No description"}</div>
+        <div><b>Status:</b> {pet.approvalStatus}</div>
 
-      <h3>Owner Information</h3>
-      <div><b>Name:</b> {pet.owner?.name || "Not available"}</div>
-      <div><b>Email:</b> {pet.owner?.email || "Not available"}</div>
+        {/* Divider */}
+        <hr style={{ margin: "16px 0" }} />
+
+        {/* OWNER INFO (RIGHT SIDE) */}
+        <h3>Owner Information</h3>
+        <div><b>Name:</b> {pet.owner?.name || "Not available"}</div>
+        <div><b>Email:</b> {pet.owner?.email || "Not available"}</div>
+      </div>
+
+      </div>
     </div>
   );
 }
@@ -1139,6 +1162,7 @@ export default function App() {
           <Route path="/pets/:id" element={<PetDetails user={user} onRefresh={loadPets} />} />
           <Route path="/petshops" element={<PetShops user={user} />} />
           <Route path="/petshops/:id" element={<PetShopDetailsPage user={user} />} />
+          
         </Routes>
       </div>
     </BrowserRouter>
