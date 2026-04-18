@@ -111,10 +111,30 @@ async function deletePet(req, res) {
   }
 }
 
+async function requestAdoption(req, res) {
+  try {
+    const { id } = req.params;
+
+    const pet = await Pet.findById(id);
+    if (!pet) {
+      return res.status(404).json({ message: "Pet not found" });
+    }
+
+    if (pet.owner && pet.owner.toString() === req.user.userId) {
+      return res.status(403).json({ message: "You cannot request adoption for your own pet" });
+    }
+
+    return res.json({ message: "Adoption request sent successfully" });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+
 module.exports = {
   createPet,
   listPets,
   listMyPets,
   getPetById,
-  deletePet
+  deletePet,
+  requestAdoption
 };

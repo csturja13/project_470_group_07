@@ -179,6 +179,43 @@ a:hover { color: white; }
   font-size: 13px;
 }
 
+.petDetailsWrap {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.petDetailsLeft {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.petDetailsImg {
+  width: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.petDetailsActions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.petDetailsRight {
+  flex: 1;
+  min-width: 280px;
+  display: grid;
+  gap: 10px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+
 /* ================= RESPONSIVE ================= */
 @media (max-width: 1300px) {
   .petGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -193,6 +230,16 @@ a:hover { color: white; }
   .card { padding: 16px; }
   .petGrid { grid-template-columns: 1fr; }
   .petImg { height: 190px; }
+}
+
+@media (max-width: 850px) {
+  .petDetailsWrap {
+    flex-direction: column;
+  }
+
+  .petDetailsLeft {
+    max-width: 100%;
+  }
 }
 
 /* make navbar search look nice */

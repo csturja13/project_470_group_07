@@ -1,6 +1,11 @@
 const Document = require("../models/documentation");
 const Pet = require("../models/Pet");
 
+const Timeline = require("../models/Timeline");
+
+
+
+
 // POST /api/documents
 async function createDocument(req, res) {
   try {
@@ -40,6 +45,15 @@ async function createDocument(req, res) {
       expiryDate: expiryDate || null,
       notes,
       status
+    });
+
+    
+    await Timeline.create({
+      petId: pet || null,
+      type: "document",
+      title: document.title,
+      description: document.notes,
+      date: document.issueDate || new Date()
     });
 
     return res.status(201).json(document);
@@ -82,6 +96,8 @@ async function deleteDocument(req, res) {
     }
 
     await document.deleteOne();
+
+    await Timeline.deleteMany({ petId: document.pet, type: "document" });
     return res.json({ message: "Document deleted" });
   } catch (err) {
     return res.status(500).json({

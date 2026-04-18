@@ -14,6 +14,9 @@ const userRoutes = require("./routes/userRoutes");
 const petshopRoutes = require("./routes/petshopRoutes");
 const vaccinationCampaignRoutes = require("./routes/vaccinationCampaignRoutes");
 const shopItemRoutes = require("./routes/shopItemRoutes");
+const timelineRoutes = require("./routes/timelineRoutes");
+
+
 
 const app = express();
 
@@ -34,6 +37,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/petshops", petshopRoutes);
 app.use("/api/vaccination-campaigns", vaccinationCampaignRoutes);
 app.use("/api/shop-items", shopItemRoutes);
+app.use("/api/timeline", timelineRoutes);
+
 
 const server = http.createServer(app);
 const io = new Server(server, {
