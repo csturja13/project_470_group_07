@@ -6,3 +6,4 @@ router.post("/", timelineController.createEvent);
 router.get("/:petId", timelineController.getTimeline);
 
 module.exports = router;
+
