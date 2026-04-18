@@ -6,6 +6,15 @@ export default function VaccinationCampaignsPage({ user }) {
   const [err, setErr] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSpecies, setFilterSpecies] = useState("");
+
+  const [selectedCampaignId, setSelectedCampaignId] = useState(null);
+  const [bookingForm, setBookingForm] = useState({
+    petName: "",
+    animalType: "Dog",
+    ownerPhone: "",
+    notes: ""
+  });
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -38,7 +47,7 @@ export default function VaccinationCampaignsPage({ user }) {
     loadCampaigns();
   }, [filterStatus, filterSpecies]);
 
-  async function submit(e) {
+  async function submitCampaign(e) {
     e.preventDefault();
     setErr("");
     try {
@@ -70,10 +79,37 @@ export default function VaccinationCampaignsPage({ user }) {
     }
   }
 
+  async function submitBooking(e, campaign) {
+    e.preventDefault();
+    setErr("");
+
+    try {
+      await api.post(`/api/vaccination-campaigns/${campaign._id}/book`, {
+        ...bookingForm,
+        animalType:
+          campaign.targetSpecies === "All"
+            ? bookingForm.animalType
+            : campaign.targetSpecies
+      });
+
+      setBookingForm({
+        petName: "",
+        animalType: "Dog",
+        ownerPhone: "",
+        notes: ""
+      });
+      setSelectedCampaignId(null);
+      loadCampaigns();
+      alert("Appointment booked successfully");
+    } catch (e2) {
+      setErr(e2?.response?.data?.message || "Booking failed");
+    }
+  }
+
   return (
     <div>
       <div className="card">
-        <h2>Vaccination Campaigns</h2>
+        <h2>Vaccination Campaign Offers</h2>
 
         {err && (
           <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>
@@ -82,6 +118,18 @@ export default function VaccinationCampaignsPage({ user }) {
         )}
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+          <select
+            className="select"
+            value={filterSpecies}
+            onChange={(e) => setFilterSpecies(e.target.value)}
+          >
+            <option value="">All Animals</option>
+            <option value="Dog">Dog</option>
+            <option value="Cat">Cat</option>
+            <option value="Bird">Bird</option>
+            <option value="Other">Other</option>
+          </select>
+
           <select
             className="select"
             value={filterStatus}
@@ -94,18 +142,6 @@ export default function VaccinationCampaignsPage({ user }) {
             <option value="Cancelled">Cancelled</option>
           </select>
 
-          <select
-            className="select"
-            value={filterSpecies}
-            onChange={(e) => setFilterSpecies(e.target.value)}
-          >
-            <option value="">All Species</option>
-            <option value="Dog">Dog</option>
-            <option value="Cat">Cat</option>
-            <option value="Bird">Bird</option>
-            <option value="Other">Other</option>
-          </select>
-
           <button className="btn" onClick={loadCampaigns}>
             Refresh
           </button>
@@ -116,7 +152,7 @@ export default function VaccinationCampaignsPage({ user }) {
         <div className="card" style={{ marginTop: 16 }}>
           <h2>Manage Vaccination Campaign</h2>
 
-          <form onSubmit={submit} style={{ display: "grid", gap: 10 }}>
+          <form onSubmit={submitCampaign} style={{ display: "grid", gap: 10 }}>
             <input
               className="input"
               placeholder="Campaign Title"
@@ -212,64 +248,133 @@ export default function VaccinationCampaignsPage({ user }) {
         </div>
       )}
 
+      
       <div className="card" style={{ marginTop: 16 }}>
         <h2>Campaign List</h2>
 
-        {!campaigns.length ? (
-          <div style={{ opacity: 0.8 }}>No vaccination campaigns found.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 12 }}>
-            {campaigns.map((campaign) => (
-              <div key={campaign._id} className="badge" style={{ padding: 14 }}>
-                <div style={{ fontWeight: 800, fontSize: 18 }}>{campaign.title}</div>
+        {!campaigns.length && <div>No vaccination campaigns found.</div>}
 
-                <div style={{ marginTop: 6 }}>{campaign.description}</div>
+        {campaigns.map((c) => (
+          <div
+            key={c._id}
+            style={{
+              padding: 14,
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 12,
+              marginBottom: 14
+            }}
+          >
+            <div style={{ fontWeight: 800, fontSize: 18 }}>{c.title}</div>
+            <div><strong>Vaccine:</strong> {c.vaccineName}</div>
+            <div><strong>Animal:</strong> {c.targetSpecies}</div>
+            <div><strong>Location:</strong> {c.location}</div>
+            <div><strong>Organizer:</strong> {c.organizer || "N/A"}</div>
+            <div><strong>Status:</strong> {c.status}</div>
+            <div><strong>Date:</strong> {new Date(c.campaignDate).toLocaleDateString()}</div>
+            <div>
+              <strong>Last Registration Date:</strong>{" "}
+              {c.lastRegistrationDate
+                ? new Date(c.lastRegistrationDate).toLocaleDateString()
+                : "N/A"}
+            </div>
+            <div><strong>Available Slots:</strong> {c.availableSlots}</div>
+            <div><strong>Description:</strong> {c.description || "N/A"}</div>
 
-                <div style={{ marginTop: 6 }}>
-                  <b>Species:</b> {campaign.targetSpecies}
-                </div>
-                <div>
-                  <b>Vaccine:</b> {campaign.vaccineName}
-                </div>
-                <div>
-                  <b>Location:</b> {campaign.location}
-                </div>
-                <div>
-                  <b>Organizer:</b> {campaign.organizer || "Not specified"}
-                </div>
-                <div>
-                  <b>Campaign Date:</b>{" "}
-                  {campaign.campaignDate
-                    ? new Date(campaign.campaignDate).toLocaleDateString()
-                    : "Not specified"}
-                </div>
-                <div>
-                  <b>Last Registration:</b>{" "}
-                  {campaign.lastRegistrationDate
-                    ? new Date(campaign.lastRegistrationDate).toLocaleDateString()
-                    : "Not specified"}
-                </div>
-                <div>
-                  <b>Available Slots:</b> {campaign.availableSlots}
-                </div>
-                <div>
-                  <b>Status:</b> {campaign.status}
-                </div>
+            {user &&
+              c.status !== "Completed" &&
+              c.status !== "Cancelled" &&
+              c.availableSlots > 0 && (
+                <button
+                  className="btn"
+                  style={{ marginTop: 12 }}
+                  onClick={() => {
+                    setSelectedCampaignId(
+                      selectedCampaignId === c._id ? null : c._id
+                    );
+                    setBookingForm({
+                      petName: "",
+                      animalType:
+                        c.targetSpecies === "All" ? "Dog" : c.targetSpecies,
+                      ownerPhone: "",
+                      notes: ""
+                    });
+                  }}
+                >
+                  {selectedCampaignId === c._id ? "Close Booking" : "Book Appointment"}
+                </button>
+              )}
 
-                {user && user.role === "admin" && (
-                  <div style={{ marginTop: 10 }}>
-                    <button
-                      className="btn secondary"
-                      onClick={() => removeCampaign(campaign._id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+            {selectedCampaignId === c._id && user && (
+              <form
+                onSubmit={(e) => submitBooking(e, c)}
+                style={{
+                  display: "grid",
+                  gap: 10,
+                  marginTop: 12,
+                  padding: 12,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 12
+                }}
+              >
+                <input
+                  className="input"
+                  placeholder="Pet Name"
+                  value={bookingForm.petName}
+                  onChange={(e) =>
+                    setBookingForm({ ...bookingForm, petName: e.target.value })
+                  }
+                  required
+                />
+
+                <select
+                  className="select"
+                  value={bookingForm.animalType}
+                  onChange={(e) =>
+                    setBookingForm({ ...bookingForm, animalType: e.target.value })
+                  }
+                  disabled={c.targetSpecies !== "All"}
+                >
+                  <option value="Dog">Dog</option>
+                  <option value="Cat">Cat</option>
+                  <option value="Bird">Bird</option>
+                  <option value="Other">Other</option>
+                </select>
+
+                <input
+                  className="input"
+                  placeholder="Owner Phone"
+                  value={bookingForm.ownerPhone}
+                  onChange={(e) =>
+                    setBookingForm({ ...bookingForm, ownerPhone: e.target.value })
+                  }
+                />
+
+                <textarea
+                  className="textarea"
+                  placeholder="Notes"
+                  value={bookingForm.notes}
+                  onChange={(e) =>
+                    setBookingForm({ ...bookingForm, notes: e.target.value })
+                  }
+                />
+
+                <button className="btn" type="submit">
+                  Confirm Booking
+                </button>
+              </form>
+            )}
+
+            {user && user.role === "admin" && (
+              <button
+                className="btn secondary"
+                style={{ marginTop: 10 }}
+                onClick={() => removeCampaign(c._id)}
+              >
+                Delete Campaign
+              </button>
+            )}
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

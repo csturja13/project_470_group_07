@@ -68,6 +68,14 @@ function Navbar({
             {user && <Link to="/documents">Documents</Link>}
             {user && <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>}
 
+<<<<<<< HEAD
+          {!user && <Link to="/signup">Signup</Link>}
+          {!user && <Link to="/login">Login</Link>}
+          {user && <Link to="/profile">Profile</Link>}
+          {user && <Link to="/documents">Documents</Link>}
+          <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>
+        
+=======
             {!user && <Link to="/signup">Signup</Link>}
             {!user && <Link to="/login">Login</Link>}
           </div>
@@ -100,6 +108,7 @@ function Navbar({
               <span className="badge">Not logged in</span>
             )}
           </div>
+>>>>>>> b58eac600b0004b95e848a336fac219746b2e01e
         </div>
 
         <div
@@ -1141,6 +1150,30 @@ export default function App() {
         />
 
         <Routes>
+<<<<<<< HEAD
+        <Route
+          path="/"
+          element={
+            <Home
+              user={user}
+              pets={pets}
+              loading={loading}
+              error={err}
+              onRefresh={loadPets}
+            />
+          }
+        />
+        <Route path="/signup" element={<Signup onAuth={onAuth} />} />
+        <Route path="/login" element={<Login onAuth={onAuth} />} />
+        <Route path="/profile" element={<Profile user={user} />} />
+        
+        <Route path="/documents" element={<DocumentsPage user={user} />} />
+        <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />}
+/>
+        <Route path="/admin" element={<AdminPanel user={user} />} />
+        <Route path="/pets/:id" element={<PetDetails />} />
+      </Routes>
+=======
           <Route
             path="/"
             element={
@@ -1164,6 +1197,7 @@ export default function App() {
           <Route path="/petshops/:id" element={<PetShopDetailsPage user={user} />} />
           
         </Routes>
+>>>>>>> b58eac600b0004b95e848a336fac219746b2e01e
       </div>
     </BrowserRouter>
   );
