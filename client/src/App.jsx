@@ -33,6 +33,9 @@ function Navbar({
   setSort,
   onSearchEnter
 }) {
+  const nav = useNavigate();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   return (
     <div className="card" style={{ marginBottom: 14 }}>
       <div
@@ -44,114 +47,170 @@ function Navbar({
       >
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            display: "grid",
+            gridTemplateColumns: "1fr auto 1fr",
             alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12
+            gap: 10
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 18,
-              flexWrap: "wrap"
-            }}
-          >
-            <div style={{ fontSize: 22 }}>🐾</div>
-            <b style={{ fontSize: 25 }}>Pawlytics</b>
-
-            <Link to="/">Home</Link>
-            {user && <Link to="/petshops">Pet Shops</Link>}
-            {user && <Link to="/profile">Profile</Link>}
-            {user && <Link to="/documents">Documents</Link>}
-            {user && <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>}
-
-<<<<<<< HEAD
-          {!user && <Link to="/signup">Signup</Link>}
-          {!user && <Link to="/login">Login</Link>}
-          {user && <Link to="/profile">Profile</Link>}
-          {user && <Link to="/documents">Documents</Link>}
-          <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>
-        
-=======
-            {!user && <Link to="/signup">Signup</Link>}
-            {!user && <Link to="/login">Login</Link>}
+          <div />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, justifySelf: "center" }}>
+            <div style={{ fontSize: 26 }}>🐾</div>
+            <b style={{ fontSize: 31, letterSpacing: 0.4 }}>Pawlytics</b>
           </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              flexWrap: "wrap"
-            }}
-          >
+          <div style={{ justifySelf: "end", position: "relative" }}>
             {user ? (
               <>
-                {user.role === "admin" && (
-                  <Link to="/admin" className="btn secondary">
-                    Admin Panel
-                  </Link>
-                )}
-
-                <span className="badge">
-                  {user.name} ({user.role})
-                </span>
-
-                <button className="btn" onClick={onLogout}>
-                  Logout
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => setShowProfileMenu((s) => !s)}
+                  style={{
+                    padding: "9px 14px",
+                    fontSize: 14,
+                    borderRadius: 999
+                  }}
+                >
+                  {user.name}
                 </button>
+                {showProfileMenu && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 8px)",
+                      right: 0,
+                      minWidth: 180,
+                      background: "#1e293b",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: 12,
+                      padding: 8,
+                      zIndex: 20,
+                      display: "grid",
+                      gap: 6,
+                      boxShadow: "0 10px 22px rgba(0,0,0,0.35)"
+                    }}
+                  >
+                    <Link
+                      to="/profile"
+                      className="btn"
+                      onClick={() => setShowProfileMenu(false)}
+                      style={{ textAlign: "center", fontSize: 14, padding: "9px 12px" }}
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      className="btn secondary"
+                      type="button"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onLogout();
+                        nav("/login");
+                      }}
+                      style={{ fontSize: 14, padding: "9px 12px" }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
-              <span className="badge">Not logged in</span>
+              <span className="badge" style={{ fontSize: 14, padding: "9px 14px" }}>Not logged in</span>
             )}
           </div>
->>>>>>> b58eac600b0004b95e848a336fac219746b2e01e
         </div>
 
         <div
           style={{
             display: "flex",
-            gap: 12,
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 20,
             flexWrap: "wrap"
           }}
         >
-          <input
-            className="input"
-            placeholder="Search pets… (Enter)"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSearchEnter();
+          <Link to="/" style={{ fontSize: 19 }}>Home</Link>
+          {user && <Link to="/petshops" style={{ fontSize: 19 }}>Pet Shops</Link>}
+          {user && <Link to="/profile" style={{ fontSize: 19 }}>Profile</Link>}
+          {user && <Link to="/documents" style={{ fontSize: 19 }}>Documents</Link>}
+          {user && <Link to="/vaccination-campaigns" style={{ fontSize: 19 }}>Vaccination Campaigns</Link>}
+          {!user && <Link to="/signup" style={{ fontSize: 19 }}>Signup</Link>}
+          {!user && <Link to="/login" style={{ fontSize: 19 }}>Login</Link>}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 14,
+            flexWrap: "wrap"
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: 0,
+              flexWrap: "nowrap",
+              alignItems: "stretch",
+              width: "min(100%, 760px)"
             }}
-            style={{ flex: "1 1 320px", minWidth: 260 }}
-          />
-
-          <select
-            className="select"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            style={{ minWidth: 220 }}
           >
-            <option value="">Category → All</option>
-            <option value="Dog">Category → Dog</option>
-            <option value="Cat">Category → Cat</option>
-            <option value="Bird">Category → Bird</option>
-            <option value="Other">Category → Other</option>
-          </select>
+            <input
+              className="input"
+              placeholder="Search pets… (Enter)"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onSearchEnter();
+              }}
+              style={{
+                flex: 1.25,
+                minWidth: 0,
+                borderRadius: "12px 0 0 12px",
+                padding: "11px 13px",
+                fontSize: 16
+              }}
+            />
 
-          <select
-            className="select"
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            style={{ minWidth: 220 }}
-          >
-            <option value="">Sort → Default</option>
-            <option value="price_asc">Sort → Price: Low → High</option>
-            <option value="price_desc">Sort → Price: High → Low</option>
-          </select>
+            <select
+              className="select"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                borderRadius: 0,
+                borderLeftWidth: 0,
+                padding: "11px 13px",
+                fontSize: 16
+              }}
+            >
+              <option value="">Category → All</option>
+              <option value="Dog">Category → Dog</option>
+              <option value="Cat">Category → Cat</option>
+              <option value="Bird">Category → Bird</option>
+              <option value="Other">Category → Other</option>
+            </select>
+
+            <select
+              className="select"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                borderRadius: "0 12px 12px 0",
+                borderLeftWidth: 0,
+                padding: "11px 13px",
+                fontSize: 16
+              }}
+            >
+              <option value="">Sort → Default</option>
+              <option value="price_asc">Sort → Price: Low → High</option>
+              <option value="price_desc">Sort → Price: High → Low</option>
+            </select>
+          </div>
+
         </div>
       </div>
 
@@ -1150,30 +1209,6 @@ export default function App() {
         />
 
         <Routes>
-<<<<<<< HEAD
-        <Route
-          path="/"
-          element={
-            <Home
-              user={user}
-              pets={pets}
-              loading={loading}
-              error={err}
-              onRefresh={loadPets}
-            />
-          }
-        />
-        <Route path="/signup" element={<Signup onAuth={onAuth} />} />
-        <Route path="/login" element={<Login onAuth={onAuth} />} />
-        <Route path="/profile" element={<Profile user={user} />} />
-        
-        <Route path="/documents" element={<DocumentsPage user={user} />} />
-        <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />}
-/>
-        <Route path="/admin" element={<AdminPanel user={user} />} />
-        <Route path="/pets/:id" element={<PetDetails />} />
-      </Routes>
-=======
           <Route
             path="/"
             element={
@@ -1197,7 +1232,6 @@ export default function App() {
           <Route path="/petshops/:id" element={<PetShopDetailsPage user={user} />} />
           
         </Routes>
->>>>>>> b58eac600b0004b95e848a336fac219746b2e01e
       </div>
     </BrowserRouter>
   );
