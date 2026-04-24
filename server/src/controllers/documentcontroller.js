@@ -2,6 +2,7 @@ const Document = require("../models/documentation");
 const Pet = require("../models/Pet");
 
 const Timeline = require("../models/Timeline");
+const notificationController = require("../controllers/notificationController");
 
 
 
@@ -54,6 +55,10 @@ async function createDocument(req, res) {
       title: document.title,
       description: document.notes,
       date: document.issueDate || new Date()
+    });
+    await notificationController.createNotification({
+      userId: newDoc.ownerId,
+      message: "Your document will expire soon"
     });
 
     return res.status(201).json(document);
