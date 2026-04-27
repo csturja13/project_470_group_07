@@ -9,5 +9,6 @@ router.get("/", requireAuth, rescueController.listRequests);
 router.get("/mine", requireAuth, rescueController.listMyRequests);
 router.patch("/:id/assign", requireAuth, rescueController.assignRequest);
 router.patch("/:id/status", requireAuth, rescueController.updateStatus);
+router.delete("/:id", requireAuth, rescueController.deleteRequest);
 
 module.exports = router;

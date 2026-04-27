@@ -108,15 +108,17 @@ exports.listMyRequests = async (req, res) => {
 
 exports.assignRequest = async (req, res) => {
   try {
-    if (req.user.role !== "rescue") {
-      return res.status(403).json({ message: "Only rescue workers can assign requests" });
-    }
-
     const rescue = await RescueRequest.findById(req.params.id);
     if (!rescue) return res.status(404).json({ message: "Rescue request not found" });
 
     if (rescue.status === "Resolved") {
       return res.status(400).json({ message: "Resolved request cannot be assigned" });
+    }
+    if (
+      rescue.assignedRescuer &&
+      rescue.assignedRescuer.toString() !== req.user.userId
+    ) {
+      return res.status(409).json({ message: "This request is already taken by another rescuer" });
     }
 
     rescue.assignedRescuer = req.user.userId;
@@ -130,6 +132,28 @@ exports.assignRequest = async (req, res) => {
     req.app.get("io").emit("rescue:updated");
 
     return res.json(populated);
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+exports.deleteRequest = async (req, res) => {
+  try {
+    const rescue = await RescueRequest.findById(req.params.id);
+    if (!rescue) return res.status(404).json({ message: "Rescue request not found" });
+
+    const isPoster = rescue.postedBy.toString() === req.user.userId;
+    if (!isPoster) {
+      return res.status(403).json({ message: "Only the requester can remove this request" });
+    }
+
+    if (rescue.assignedRescuer) {
+      return res.status(400).json({ message: "Request cannot be removed after a rescuer has taken it" });
+    }
+
+    await rescue.deleteOne();
+    req.app.get("io").emit("rescue:updated");
+    return res.json({ message: "Rescue request removed" });
   } catch (err) {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
