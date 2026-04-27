@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { useCart } from "../cart/CartContext";
-import Modal from "./Modal";
+import CheckoutModal from "./CheckoutModal";
 
 export default function PetShopDetailsPage({ user }) {
   const { id } = useParams();
@@ -13,8 +13,8 @@ export default function PetShopDetailsPage({ user }) {
   const [items, setItems] = useState([]);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
-  const [purchaseOpen, setPurchaseOpen] = useState(false);
-  const [purchaseText, setPurchaseText] = useState("");
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutItems, setCheckoutItems] = useState([]);
 
   const [itemForm, setItemForm] = useState({
     name: "",
@@ -131,35 +131,14 @@ export default function PetShopDetailsPage({ user }) {
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
-      <Modal
-        open={purchaseOpen}
-        title="Purchase successful"
-        onClose={() => setPurchaseOpen(false)}
-        actions={
-          <>
-            <button className="btn secondary" type="button" onClick={() => setPurchaseOpen(false)}>
-              Continue shopping
-            </button>
-            <button
-              className="btn"
-              type="button"
-              onClick={() => {
-                setPurchaseOpen(false);
-                nav("/cart");
-              }}
-            >
-              View cart
-            </button>
-          </>
-        }
-      >
-        <div style={{ fontSize: 18 }}>
-          {purchaseText || "Thanks for purchasing."}
-        </div>
-        <div style={{ opacity: 0.85, marginTop: 10 }}>
-          We’ll contact you soon with delivery details.
-        </div>
-      </Modal>
+      <CheckoutModal
+        open={checkoutOpen}
+        items={checkoutItems}
+        onClose={() => setCheckoutOpen(false)}
+        onPaymentSuccess={(txn) => {
+          setMsg(`Payment complete: ${txn.id}`);
+        }}
+      />
 
       <div className="card">
         <h2 style={{ marginTop: 0 }}>{shop.name}</h2>
@@ -371,8 +350,16 @@ export default function PetShopDetailsPage({ user }) {
                       className="btn"
                       type="button"
                       onClick={() => {
-                        setPurchaseText(`Thanks for purchasing ${p.name}`);
-                        setPurchaseOpen(true);
+                        setCheckoutItems([
+                          {
+                            key: `pet-${p._id}`,
+                            id: p._id,
+                            name: `${p.name} — ${p.species}`,
+                            qty: 1,
+                            price: p.price ?? 0
+                          }
+                        ]);
+                        setCheckoutOpen(true);
                       }}
                     >
                       Buy now
@@ -434,8 +421,16 @@ export default function PetShopDetailsPage({ user }) {
                       className="btn"
                       type="button"
                       onClick={() => {
-                        setPurchaseText(`Thanks for purchasing ${item.name}`);
-                        setPurchaseOpen(true);
+                        setCheckoutItems([
+                          {
+                            key: `item-${item._id}`,
+                            id: item._id,
+                            name: item.name,
+                            qty: 1,
+                            price: item.price ?? 0
+                          }
+                        ]);
+                        setCheckoutOpen(true);
                       }}
                     >
                       Buy now

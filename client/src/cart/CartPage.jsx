@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useCart } from "./CartContext";
-import Modal from "../components/Modal";
+import CheckoutModal from "../components/CheckoutModal";
 
 function toNumberPrice(price) {
   const n = Number(price);
@@ -10,8 +10,8 @@ function toNumberPrice(price) {
 
 export default function CartPage({ user }) {
   const { items, remove, clear, setQty } = useCart();
-  const [purchaseOpen, setPurchaseOpen] = useState(false);
-  const [purchaseText, setPurchaseText] = useState("");
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutItems, setCheckoutItems] = useState([]);
   const [purchaseKeys, setPurchaseKeys] = useState([]);
 
   if (!user) {
@@ -42,39 +42,17 @@ export default function CartPage({ user }) {
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <Modal
-        open={purchaseOpen}
-        title="Purchase successful"
-        onClose={() => setPurchaseOpen(false)}
-        actions={
-          <>
-            <button
-              className="btn secondary"
-              type="button"
-              onClick={() => {
-                setPurchaseOpen(false);
-              }}
-            >
-              OK
-            </button>
-            <button
-              className="btn"
-              type="button"
-              onClick={() => {
-                purchaseKeys.forEach((k) => remove(k));
-                setPurchaseOpen(false);
-              }}
-            >
-              Remove purchased
-            </button>
-          </>
-        }
-      >
-        <div style={{ fontSize: 18 }}>{purchaseText || "Thanks for purchasing."}</div>
-        <div style={{ opacity: 0.85, marginTop: 10 }}>
-          This is a demo checkout confirmation (payment not integrated yet).
-        </div>
-      </Modal>
+      <CheckoutModal
+        open={checkoutOpen}
+        items={checkoutItems}
+        onClose={() => {
+          setCheckoutOpen(false);
+        }}
+        onPaymentSuccess={() => {
+          purchaseKeys.forEach((k) => remove(k));
+          setPurchaseKeys([]);
+        }}
+      />
 
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -94,8 +72,8 @@ export default function CartPage({ user }) {
               disabled={!items.length}
               onClick={() => {
                 setPurchaseKeys(items.map((x) => x.key));
-                setPurchaseText(`Thanks for purchasing ${items.length} item(s).`);
-                setPurchaseOpen(true);
+                setCheckoutItems(items);
+                setCheckoutOpen(true);
               }}
             >
               Buy all now
@@ -160,8 +138,8 @@ export default function CartPage({ user }) {
                       type="button"
                       onClick={() => {
                         setPurchaseKeys([x.key]);
-                        setPurchaseText(`Thanks for purchasing ${x.name}`);
-                        setPurchaseOpen(true);
+                        setCheckoutItems([x]);
+                        setCheckoutOpen(true);
                       }}
                     >
                       Buy now
