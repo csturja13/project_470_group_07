@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from "react-router-dom";
+import { Component, useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import "./App.css";
 import { api, setAuthToken } from "./api";
 import DocumentsPage from "./components/DocumentsPage";
@@ -11,6 +11,45 @@ import Notifications from "./components/Notifications";
 import useDeletePet from "./hooks/useDeletePet";
 import { CartProvider, useCart } from "./cart/CartContext";
 import CartPage from "./cart/CartPage";
+import PetSoldOverlay from "./components/PetSoldOverlay";
+
+/** Catches render errors so one bad screen does not leave a blank gradient-only page */
+class RouteErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("Route render error:", error, info?.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Something went wrong</h2>
+          <p style={{ opacity: 0.9 }}>{String(this.state.error?.message || this.state.error)}</p>
+          <p style={{ opacity: 0.75, fontSize: 14 }}>
+            Try refreshing the page. If this persists, open the browser developer console (F12) and check for errors.
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function RoutedSection({ children }) {
+  const location = useLocation();
+  return (
+    <RouteErrorBoundary key={location.pathname}>{children}</RouteErrorBoundary>
+  );
+}
 
 /* ================= AUTH HELPERS ================= */
 function saveAuth(token, user) {
@@ -225,14 +264,13 @@ function Navbar({
             </select>
           </div>
 
+          {!user && (
+            <div style={{ marginTop: 14, opacity: 0.9 }}>
+              Welcome to Pawlytics. Signup/Login to create pet posts.
+            </div>
+          )}
         </div>
       </div>
-
-      {!user && (
-        <div style={{ marginTop: 14, opacity: 0.9 }}>
-          Welcome to Pawlytics. Signup/Login to create pet posts.
-        </div>
-      )}
     </div>
   );
 }
@@ -240,15 +278,21 @@ function Navbar({
 function PetCard({ p }) {
   return (
     <div className="petCard" key={p._id}>
-      <img
-        className="petImg"
-        src={
-          p.imagePath
-            ? `http://localhost:5000${p.imagePath}`
-            : "https://placehold.co/600x400?text=Pet"
-        }
-        alt={p.name}
-      />
+      <div className="petImgWrap">
+        <img
+          className="petImg"
+          src={
+            p.imagePath
+              ? `http://localhost:5000${p.imagePath}`
+              : "https://placehold.co/600x400?text=Pet"
+          }
+          alt={p.name}
+        />
+        <PetSoldOverlay
+          soldBannerStyle={p.soldBannerStyle || "none"}
+          awaitingAdminSoldLabel={Boolean(p.awaitingAdminSoldLabel)}
+        />
+      </div>
 
       <div className="petTitle">
         {p.name} — {p.species}
@@ -532,7 +576,8 @@ function PetDetails({ user, onRefresh }) {
 
       if (res.data?.pendingRequest?._id) {
         const msgRes = await api.get(`/api/adoptions/${res.data.pendingRequest._id}/messages`);
-        setMessages(msgRes.data);
+        const list = msgRes.data;
+        setMessages(Array.isArray(list) ? list : []);
       } else {
         setMessages([]);
       }
@@ -554,10 +599,12 @@ function PetDetails({ user, onRefresh }) {
   useEffect(() => {
     if (!adoptionContext?.pendingRequest?._id) return undefined;
 
+    const pendingId = adoptionContext.pendingRequest._id;
     const timer = setInterval(async () => {
       try {
-        const msgRes = await api.get(`/api/adoptions/${adoptionContext.pendingRequest._id}/messages`);
-        setMessages(msgRes.data);
+        const msgRes = await api.get(`/api/adoptions/${pendingId}/messages`);
+        const list = msgRes.data;
+        setMessages(Array.isArray(list) ? list : []);
       } catch {
         // ignore polling errors and keep latest visible state
       }
@@ -566,17 +613,15 @@ function PetDetails({ user, onRefresh }) {
     return () => clearInterval(timer);
   }, [adoptionContext?.pendingRequest?._id]);
 
-  const isOwner = user && pet?.owner && pet.owner._id === user._id;
   const pendingRequest = adoptionContext?.pendingRequest || null;
   const myLatestRequest = adoptionContext?.myLatestRequest || null;
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const ownerId = pet?.owner?._id ?? pet?.owner;
+  const isOwner = !!(user && ownerId && String(ownerId) === String(user._id));
   const myPendingRequest =
     pendingRequest && pendingRequest.requester?._id === user?._id ? pendingRequest : null;
   const canRequestAdoption = !!(user && adoptionContext?.canRequest);
   const isBlockedForOthers = !!(user && !isOwner && pendingRequest && !myPendingRequest);
-
-  if (loading) return <div className="card">Loading pet details...</div>;
-  if (err) return <div className="card">{err}</div>;
-  if (!pet) return <div className="card">Pet not found.</div>;
 
   async function handleAdoptionRequest() {
     setChatErr("");
@@ -612,11 +657,16 @@ function PetDetails({ user, onRefresh }) {
       await api.post(`/api/adoptions/${pendingRequest._id}/messages`, { text: chatText });
       setChatText("");
       const msgRes = await api.get(`/api/adoptions/${pendingRequest._id}/messages`);
-      setMessages(msgRes.data);
+      const list = msgRes.data;
+      setMessages(Array.isArray(list) ? list : []);
     } catch (e2) {
       setChatErr(e2?.response?.data?.message || "Failed to send message");
     }
   }
+
+  if (loading) return <div className="card">Loading pet details...</div>;
+  if (err) return <div className="card">{err}</div>;
+  if (!pet) return <div className="card">Pet not found.</div>;
 
   return (
     <div className="card">
@@ -626,6 +676,7 @@ function PetDetails({ user, onRefresh }) {
 
       {/* LEFT SIDE */}
       <div className="petDetailsLeft">
+        <div className="petDetailsImgWrap">
         <img
         src={
             pet.imagePath
@@ -635,6 +686,11 @@ function PetDetails({ user, onRefresh }) {
         alt={pet.name}
         className="petDetailsImg"
         />
+        <PetSoldOverlay
+          soldBannerStyle={pet.soldBannerStyle || "none"}
+          awaitingAdminSoldLabel={Boolean(pet.awaitingAdminSoldLabel)}
+        />
+        </div>
         <div className="petDetailsActions">
           {canRequestAdoption && <button className="btn" onClick={handleAdoptionRequest}>Request to Adopt</button>}
           {isBlockedForOthers && (
@@ -694,11 +750,11 @@ function PetDetails({ user, onRefresh }) {
             </div>
 
             <div className="chatMessages">
-              {!messages.length && <div style={{ opacity: 0.8 }}>No messages yet.</div>}
-              {messages.map((m) => {
+              {!safeMessages.length && <div style={{ opacity: 0.8 }}>No messages yet.</div>}
+              {safeMessages.map((m) => {
                 const mine = m.sender?._id === user._id;
                 return (
-                  <div key={m._id} className={`chatMessage ${mine ? "mine" : ""}`}>
+                  <div key={m._id || String(m.createdAt)} className={`chatMessage ${mine ? "mine" : ""}`}>
                     <div className="chatSender">{m.sender?.name || "User"}</div>
                     <div>{m.text}</div>
                   </div>
@@ -731,7 +787,7 @@ function PetDetails({ user, onRefresh }) {
           <>
             <hr style={{ margin: "16px 0" }} />
             {isOwner || user.role === "admin" ? (
-              <Timeline petId={pet._id} canDelete={isOwner} />
+              <Timeline petId={pet._id ? String(pet._id) : ""} canDelete={isOwner} />
             ) : (
               <div>
                 <h3>Pet Health Timeline</h3>
@@ -1210,8 +1266,11 @@ function Profile({ user, onUserRefresh }) {
 /* ================= ADMIN PANEL ================= */
 function AdminPanel({ user, onRefresh }) {
   const [pending, setPending] = useState([]);
+  const [pendingSales, setPendingSales] = useState([]);
   const [healthHistory, setHealthHistory] = useState([]);
+  const [commerceStats, setCommerceStats] = useState(null);
   const [err, setErr] = useState("");
+  const [info, setInfo] = useState("");
 
   async function loadPending() {
     setErr("");
@@ -1225,7 +1284,9 @@ function AdminPanel({ user, onRefresh }) {
 
   useEffect(() => {
     loadPending();
+    loadPendingSales();
     loadHealthHistory();
+    loadCommerceStats();
   }, []);
 
   async function loadHealthHistory() {
@@ -1257,6 +1318,38 @@ function AdminPanel({ user, onRefresh }) {
     }
   }
 
+  async function loadCommerceStats() {
+    try {
+      const res = await api.get("/api/admin/commerce-stats");
+      setCommerceStats(res.data);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load commerce stats");
+    }
+  }
+
+  async function loadPendingSales() {
+    try {
+      const res = await api.get("/api/admin/pets/pending-sales");
+      setPendingSales(res.data || []);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load pending pet sales");
+    }
+  }
+
+  async function markSoldBanner(petId, mode) {
+    setErr("");
+    setInfo("");
+    try {
+      await api.patch(`/api/admin/pets/${petId}/sold-banner`, { mode });
+      setInfo("Listing updated.");
+      await loadPendingSales();
+      await loadCommerceStats();
+      onRefresh?.();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to update listing");
+    }
+  }
+
   if (!user) return <div className="card">Please login as admin.</div>;
   if (user.role !== "admin") return <div className="card">Forbidden: Admin only.</div>;
 
@@ -1268,6 +1361,11 @@ function AdminPanel({ user, onRefresh }) {
         {err && (
           <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>
             {err}
+          </div>
+        )}
+        {info && (
+          <div className="badge" style={{ background: "rgba(0,255,120,0.15)" }}>
+            {info}
           </div>
         )}
 
@@ -1314,6 +1412,109 @@ function AdminPanel({ user, onRefresh }) {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="card">
+        <h2>Buy/Sell Statistics</h2>
+        {!commerceStats ? (
+          <div style={{ opacity: 0.8, marginTop: 10 }}>Loading commerce stats...</div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            <div>Total Orders: <b>{commerceStats.totals?.totalOrders || 0}</b></div>
+            <div>Total Items Sold: <b>{commerceStats.totals?.totalItems || 0}</b></div>
+            <div>Subtotal Sales: <b>{Number(commerceStats.totals?.subtotalSales || 0).toFixed(2)}</b></div>
+            <div>Delivery Collected: <b>{Number(commerceStats.totals?.deliveryCollected || 0).toFixed(2)}</b></div>
+            <div>Net Revenue: <b>{Number(commerceStats.totals?.netSales || 0).toFixed(2)}</b></div>
+
+            <div style={{ marginTop: 8 }}>
+              <b>Recent Purchases</b>
+            </div>
+            {!commerceStats.recentOrders?.length ? (
+              <div style={{ opacity: 0.8 }}>No purchase records yet.</div>
+            ) : (
+              <div style={{ display: "grid", gap: 8 }}>
+                {commerceStats.recentOrders.map((order) => (
+                  <div key={order._id} className="badge" style={{ padding: 10 }}>
+                    <div><b>{order.transactionId}</b></div>
+                    <div>{order.payerName} • {order.paymentMethod}</div>
+                    <div>Amount: {Number(order.totalAmount || 0).toFixed(2)}</div>
+                    <div style={{ opacity: 0.8, fontSize: 13 }}>
+                      {new Date(order.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Pet purchases — sold label</h2>
+        <div style={{ opacity: 0.85, marginTop: 6, marginBottom: 12 }}>
+          After a buyer pays for a pet, it appears here. Choose how the listing should look on the site.
+        </div>
+        {!pendingSales.length ? (
+          <div style={{ opacity: 0.8 }}>No pets waiting for a sold label.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 16 }}>
+            {pendingSales.map((p) => (
+              <div
+                key={p._id}
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  flexWrap: "wrap",
+                  alignItems: "flex-start",
+                  paddingBottom: 16,
+                  borderBottom: "1px solid rgba(255,255,255,0.1)"
+                }}
+              >
+                <div className="petImgWrap" style={{ width: 200, flexShrink: 0 }}>
+                  <img
+                    className="petImg"
+                    style={{ height: 140 }}
+                    src={
+                      p.imagePath
+                        ? `http://localhost:5000${p.imagePath}`
+                        : "https://placehold.co/240x180?text=Pet"
+                    }
+                    alt={p.name}
+                  />
+                  <PetSoldOverlay
+                    soldBannerStyle="none"
+                    awaitingAdminSoldLabel={Boolean(p.awaitingAdminSoldLabel)}
+                  />
+                </div>
+                <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, fontSize: 18 }}>
+                    {p.name} — {p.species}
+                  </div>
+                  <div style={{ opacity: 0.85, marginTop: 6 }}>
+                    Owner: {p.owner?.name || "Unknown"} • Price: {p.price ?? "—"}
+                  </div>
+                  <div style={{ opacity: 0.9, marginTop: 8 }}>{p.description}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => markSoldBanner(p._id, "no_delivery_discount")}
+                    >
+                      Sold without delivery discount
+                    </button>
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      onClick={() => markSoldBanner(p._id, "free_delivery")}
+                    >
+                      Sold with free delivery
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -1438,32 +1639,34 @@ export default function App() {
             setSort={setSort}
             onSearchEnter={loadPets}
           />
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <Home
-                  user={user}
-                  pets={pets}
-                  loading={loading}
-                  error={err}
-                  onRefresh={loadPets}
-                />
-              }
-            />
-            <Route path="/signup" element={<Signup onAuth={onAuth} />} />
-            <Route path="/login" element={<Login onAuth={onAuth} />} />
-            <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
-            <Route path="/documents" element={<DocumentsPage user={user} />} />
-            <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
-            <Route path="/notifications" element={<Notifications userId={user?._id} />} />
-            <Route path="/rescue" element={<RescuePage user={user} />} />
-            <Route path="/cart" element={<CartPage user={user} />} />
-            <Route path="/admin" element={<AdminPanel user={user} onRefresh={loadPets} />} />
-            <Route path="/pets/:id" element={<PetDetails user={user} onRefresh={loadPets} />} />
-            <Route path="/petshops" element={<PetShops user={user} />} />
-            <Route path="/petshops/:id" element={<PetShopDetailsPage user={user} />} />
-          </Routes>
+          <RoutedSection>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <Home
+                    user={user}
+                    pets={pets}
+                    loading={loading}
+                    error={err}
+                    onRefresh={loadPets}
+                  />
+                }
+              />
+              <Route path="/signup" element={<Signup onAuth={onAuth} />} />
+              <Route path="/login" element={<Login onAuth={onAuth} />} />
+              <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
+              <Route path="/documents" element={<DocumentsPage user={user} />} />
+              <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
+              <Route path="/notifications" element={<Notifications userId={user?._id} />} />
+              <Route path="/rescue" element={<RescuePage user={user} />} />
+              <Route path="/cart" element={<CartPage user={user} />} />
+              <Route path="/admin" element={<AdminPanel user={user} onRefresh={loadPets} />} />
+              <Route path="/pets/:id" element={<PetDetails user={user} onRefresh={loadPets} />} />
+              <Route path="/petshops" element={<PetShops user={user} />} />
+              <Route path="/petshops/:id" element={<PetShopDetailsPage user={user} />} />
+            </Routes>
+          </RoutedSection>
         </div>
       </CartProvider>
     </BrowserRouter>

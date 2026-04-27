@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Modal from "./Modal";
+import { api } from "../api";
 
 function toNumberPrice(price) {
   const n = Number(price);
@@ -30,6 +31,8 @@ export default function CheckoutModal({ open, items = [], onClose, onPaymentSucc
     [items]
   );
   const totalQty = useMemo(() => items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0), [items]);
+  const deliveryCharge = subtotal > 0 ? 60 : 0;
+  const finalTotal = Math.max(0, subtotal + deliveryCharge);
 
   function resetFormState() {
     setError("");
@@ -46,7 +49,7 @@ export default function CheckoutModal({ open, items = [], onClose, onPaymentSucc
     onClose?.();
   }
 
-  function onSubmit(e) {
+  async function onSubmit(e) {
     e.preventDefault();
     setError("");
     if (!items.length) {
@@ -78,11 +81,26 @@ export default function CheckoutModal({ open, items = [], onClose, onPaymentSucc
       method: paymentMethod,
       payerName: payerName.trim(),
       accountTail: accountDigits.slice(-4),
-      total: subtotal.toFixed(2),
+      subtotal: subtotal.toFixed(2),
+      deliveryCharge: deliveryCharge.toFixed(2),
+      total: finalTotal.toFixed(2),
       qty: totalQty
     };
-    setReceipt(transaction);
-    onPaymentSuccess?.(transaction);
+
+    try {
+      await api.post("/api/commerce/purchases", {
+        items,
+        paymentMethod,
+        payerName: transaction.payerName,
+        accountTail: transaction.accountTail,
+        note,
+        transactionId: transaction.id
+      });
+      setReceipt(transaction);
+      onPaymentSuccess?.(transaction);
+    } catch (e2) {
+      setError(e2?.response?.data?.message || "Payment failed");
+    }
   }
 
   const methodLabel =
@@ -154,7 +172,10 @@ export default function CheckoutModal({ open, items = [], onClose, onPaymentSucc
       ) : (
         <form id="checkout-payment-form" onSubmit={onSubmit} style={{ display: "grid", gap: 10 }}>
           <div style={{ opacity: 0.88 }}>
-            Items: <b>{totalQty}</b> • Total: <b>{subtotal.toFixed(2)}</b>
+            Items: <b>{totalQty}</b> • Subtotal: <b>{subtotal.toFixed(2)}</b>
+          </div>
+          <div style={{ opacity: 0.88 }}>
+            Delivery: <b>{deliveryCharge.toFixed(2)}</b> • Payable: <b>{finalTotal.toFixed(2)}</b>
           </div>
           <select className="select" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
             <option value="card">Card</option>

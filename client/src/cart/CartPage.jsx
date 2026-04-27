@@ -13,7 +13,6 @@ export default function CartPage({ user }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutItems, setCheckoutItems] = useState([]);
   const [purchaseKeys, setPurchaseKeys] = useState([]);
-
   if (!user) {
     return (
       <div className="card">

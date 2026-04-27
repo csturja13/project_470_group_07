@@ -1,19 +1,38 @@
 /* ================= GLOBAL ================= */
 * { box-sizing: border-box; }
 
-html, body, #root {
-  height: 100%;
+html,
+body {
   width: 100%;
+  min-height: 100%;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: block;
 }
 
 body {
   margin: 0;
+  display: block;
   font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
   background: linear-gradient(135deg, #0f172a, #1e3a8a, #0ea5e9);
   color: #f1f5f9;
 
   /* ✅ stop horizontal scroll */
   overflow-x: hidden;
+}
+
+/* Vite index.css sets :root text color in light mode; keep UI readable on dark gradient */
+@media (prefers-color-scheme: light) {
+  html,
+  body,
+  #root,
+  .container {
+    color: #f1f5f9;
+  }
 }
 
 /* ================= LAYOUT ================= */
@@ -202,11 +221,87 @@ a:hover { color: white; }
   transform: translateY(-2px);
 }
 
+.petImgWrap {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
 .petImg {
   width: 100%;
   height: 200px;
   border-radius: 14px;
   object-fit: cover;
+  display: block;
+}
+
+.petSoldOverlayRoot {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.petSoldRibbon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-28deg);
+  background: #d32f2f;
+  color: #fff;
+  font-weight: 900;
+  font-size: clamp(14px, 3.2vw, 22px);
+  letter-spacing: 0.08em;
+  padding: 10px min(42vw, 160px);
+  box-shadow: 2px 3px 10px rgba(0, 0, 0, 0.38);
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.petSoldFreeDelivery {
+  position: absolute;
+  bottom: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.92);
+  color: #fff;
+  font-weight: 800;
+  font-size: clamp(12px, 2.4vw, 16px);
+  letter-spacing: 0.12em;
+  padding: 6px 14px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.petReservedBanner {
+  background: rgba(15, 23, 42, 0.82);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-align: center;
+  max-width: 90%;
+  line-height: 1.35;
+}
+
+.petDetailsImgWrap {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.petDetailsImgWrap .petSoldRibbon {
+  font-size: clamp(18px, 4vw, 26px);
+  padding: 12px min(36vw, 200px);
+}
+
+.petDetailsImgWrap .petSoldFreeDelivery {
+  bottom: 16%;
 }
 
 .petTitle {

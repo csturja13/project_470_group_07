@@ -3,6 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import { useCart } from "../cart/CartContext";
 import CheckoutModal from "./CheckoutModal";
+import PetSoldOverlay from "./PetSoldOverlay";
+
+function petIsPurchasable(p) {
+  if (p.awaitingAdminSoldLabel) return false;
+  const style = p.soldBannerStyle || "none";
+  return style === "none";
+}
 
 export default function PetShopDetailsPage({ user }) {
   const { id } = useParams();
@@ -137,6 +144,7 @@ export default function PetShopDetailsPage({ user }) {
         onClose={() => setCheckoutOpen(false)}
         onPaymentSuccess={(txn) => {
           setMsg(`Payment complete: ${txn.id}`);
+          loadShopDetails();
         }}
       />
 
@@ -158,7 +166,6 @@ export default function PetShopDetailsPage({ user }) {
           {msg}
         </div>
       )}
-
       {isOwner && (
         <>
           <div className="card">
@@ -309,15 +316,21 @@ export default function PetShopDetailsPage({ user }) {
           <div className="petGrid" style={{ marginTop: 14 }}>
             {pets.map((p) => (
               <div key={p._id} className="petCard">
-                <img
-                  className="petImg"
-                  src={
-                    p.imagePath
-                      ? `http://localhost:5000${p.imagePath}`
-                      : "https://placehold.co/600x400?text=Pet"
-                  }
-                  alt={p.name}
-                />
+                <div className="petImgWrap">
+                  <img
+                    className="petImg"
+                    src={
+                      p.imagePath
+                        ? `http://localhost:5000${p.imagePath}`
+                        : "https://placehold.co/600x400?text=Pet"
+                    }
+                    alt={p.name}
+                  />
+                  <PetSoldOverlay
+                    soldBannerStyle={p.soldBannerStyle || "none"}
+                    awaitingAdminSoldLabel={Boolean(p.awaitingAdminSoldLabel)}
+                  />
+                </div>
                 <div className="petTitle">
                   {p.name} — {p.species}
                 </div>
@@ -327,7 +340,7 @@ export default function PetShopDetailsPage({ user }) {
                 <div className="petMeta">Price: {p.price ?? "Not specified"}</div>
                 <div className="petMeta">{p.description || "No description"}</div>
 
-                {canBuy && (
+                {canBuy && petIsPurchasable(p) && (
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
                     <button
                       className="btn secondary"
@@ -352,11 +365,15 @@ export default function PetShopDetailsPage({ user }) {
                       onClick={() => {
                         setCheckoutItems([
                           {
-                            key: `pet-${p._id}`,
+                            key: `pet:${p._id}`,
+                            kind: "pet",
                             id: p._id,
                             name: `${p.name} — ${p.species}`,
                             qty: 1,
-                            price: p.price ?? 0
+                            price: p.price ?? 0,
+                            category: "",
+                            imageUrl: p.imagePath ? `http://localhost:5000${p.imagePath}` : "",
+                            shopId: shop?._id || id
                           }
                         ]);
                         setCheckoutOpen(true);
@@ -423,11 +440,16 @@ export default function PetShopDetailsPage({ user }) {
                       onClick={() => {
                         setCheckoutItems([
                           {
-                            key: `item-${item._id}`,
+                            key: `shop_item:${item._id}`,
+                            kind: "shop_item",
                             id: item._id,
                             name: item.name,
                             qty: 1,
-                            price: item.price ?? 0
+                            price: item.price ?? 0,
+                            category: item.category || "",
+                            imageUrl: item.imagePath ? `http://localhost:5000${item.imagePath}` : "",
+                            shopId: shop?._id || id,
+                            stock: item.stock ?? null
                           }
                         ]);
                         setCheckoutOpen(true);
