@@ -5,9 +5,6 @@ const Timeline = require("../models/Timeline");
 const notificationController = require("../controllers/notificationController");
 
 
-
-
-// POST /api/documents
 async function createDocument(req, res) {
   try {
     const {
@@ -48,17 +45,19 @@ async function createDocument(req, res) {
       status
     });
 
-    
-    await Timeline.create({
-      petId: pet || null,
-      type: "document",
-      title: document.title,
-      description: document.notes,
-      date: document.issueDate || new Date()
-    });
+    if (pet) {
+      await Timeline.create({
+        petId: pet,
+        type: "document",
+        title: document.title,
+        description: document.notes,
+        date: document.issueDate || new Date()
+      });
+    }
+
     await notificationController.createNotification({
-      userId: newDoc.ownerId,
-      message: "Your document will expire soon"
+      userId: document.owner,
+      message: "Your document has been created successfully"
     });
 
     return res.status(201).json(document);
@@ -70,7 +69,6 @@ async function createDocument(req, res) {
   }
 }
 
-// GET /api/documents/mine
 async function listMyDocuments(req, res) {
   try {
     const documents = await Document.find({ owner: req.user.userId })
@@ -86,7 +84,6 @@ async function listMyDocuments(req, res) {
   }
 }
 
-// DELETE /api/documents/:id
 async function deleteDocument(req, res) {
   try {
     const { id } = req.params;

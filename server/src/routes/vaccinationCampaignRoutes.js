@@ -5,7 +5,8 @@ const {
   updateCampaign,
   deleteCampaign,
   bookCampaignAppointment,
-  listMyBookings
+  listMyBookings,
+  cancelBooking
 } = require("../controllers/vaccinationCampaignController");
 const { requireAuth, requireRole } = require("../middlewares/auth");
 
@@ -15,6 +16,7 @@ router.get("/", listCampaigns);
 // User
 router.get("/my-bookings", requireAuth, listMyBookings);
 router.post("/:id/book", requireAuth, bookCampaignAppointment);
+router.delete("/booking/:bookingId", requireAuth, cancelBooking);
 
 // Admin-only
 router.post("/", requireAuth, requireRole("admin"), createCampaign);

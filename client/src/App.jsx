@@ -57,10 +57,26 @@ function Navbar({
             gap: 10
           }}
         >
-          <div />
-          <div style={{ display: "flex", alignItems: "center", gap: 10, justifySelf: "center" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 18,
+              flexWrap: "wrap"
+            }}
+          >
             <div style={{ fontSize: 26 }}>🐾</div>
             <b style={{ fontSize: 31, letterSpacing: 0.4 }}>Pawlytics</b>
+
+            <Link to="/">Home</Link>
+            {user && <Link to="/petshops">Pet Shops</Link>}
+            {user && <Link to="/profile">Profile</Link>}
+            {user && <Link to="/documents">Documents</Link>}
+            {user && <Link to="/vaccination-campaigns">Vaccination Campaigns</Link>}
+
+            {!user && <Link to="/signup">Signup</Link>}
+            {!user && <Link to="/login">Login</Link>}
+          </div>
           </div>
           <div style={{ justifySelf: "end", position: "relative" }}>
             {user ? (
@@ -1364,7 +1380,6 @@ export default function App() {
             setSort={setSort}
             onSearchEnter={loadPets}
           />
-
           <Routes>
             <Route
               path="/"
@@ -1395,3 +1410,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
