@@ -31,7 +31,6 @@ async function createPet(req, res) {
   }
 }
 
-// Get single pet by ID with owner info
 async function getPetById(req, res) {
   try {
     const pet = await Pet.findById(req.params.id).populate("owner", "name email");
@@ -47,7 +46,7 @@ async function getPetById(req, res) {
   }
 }
 
-// Homepage / public list: only APPROVED pets
+// Homepage: only APPROVED pets
 async function listPets(req, res) {
   try {
     const { q, species } = req.query;
@@ -75,7 +74,7 @@ async function listPets(req, res) {
   }
 }
 
-// Logged in user's own pets (can include pending)
+// Logged in user's own pets
 async function listMyPets(req, res) {
   try {
     const pets = await Pet.find({ owner: req.user.userId })

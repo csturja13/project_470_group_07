@@ -1,5 +1,7 @@
 const VaccinationCampaign = require("../models/VaccinationCampaign");
 const VaccinationBooking = require("../models/VaccinationBooking");
+const Timeline = require("../models/Timeline");
+const Pet = require("../models/Pet");
 
 async function listCampaigns(req, res) {
   try {
@@ -67,7 +69,6 @@ async function createCampaign(req, res) {
   }
 }
 
-// Admin: update campaign
 async function updateCampaign(req, res) {
   try {
     const { id } = req.params;
@@ -111,12 +112,10 @@ async function deleteCampaign(req, res) {
   }
 }
 
-
-// User: book an appointment
 async function bookCampaignAppointment(req, res) {
   try {
     const { id } = req.params;
-    const { petName, animalType, ownerPhone, notes } = req.body;
+    const { petId, petName, animalType, ownerPhone, notes } = req.body;
 
     if (!petName || !animalType) {
       return res.status(400).json({
@@ -127,6 +126,10 @@ async function bookCampaignAppointment(req, res) {
     const campaign = await VaccinationCampaign.findById(id);
     if (!campaign) {
       return res.status(404).json({ message: "Campaign not found" });
+    }
+
+    if (campaign.lastRegistrationDate && new Date() > new Date(campaign.lastRegistrationDate)) {
+      return res.status(400).json({ message: "Registration deadline has passed" });
     }
 
     if (campaign.availableSlots <= 0) {
@@ -142,6 +145,17 @@ async function bookCampaignAppointment(req, res) {
       });
     }
 
+    const existingBooking = await VaccinationBooking.findOne({
+      campaign: campaign._id,
+      user: req.user.userId
+    });
+
+    if (existingBooking) {
+      return res.status(400).json({
+        message: "You have already booked this campaign"
+      });
+    }
+
     const booking = await VaccinationBooking.create({
       campaign: campaign._id,
       user: req.user.userId,
@@ -153,6 +167,16 @@ async function bookCampaignAppointment(req, res) {
 
     campaign.availableSlots = campaign.availableSlots - 1;
     await campaign.save();
+
+    if (petId) {
+      await Timeline.create({
+        petId: petId,
+        type: "vaccination",
+        title: `Booked: ${campaign.title}`,
+        description: `Vaccination campaign booking confirmed for ${petName}`,
+        date: new Date()
+      });
+    }
 
     return res.status(201).json({
       message: "Appointment booked successfully",
@@ -166,7 +190,6 @@ async function bookCampaignAppointment(req, res) {
   }
 }
 
-// User: view my bookings
 async function listMyBookings(req, res) {
   try {
     const bookings = await VaccinationBooking.find({
@@ -184,8 +207,35 @@ async function listMyBookings(req, res) {
   }
 }
 
+async function cancelBooking(req, res) {
+  try {
+    const { bookingId } = req.params;
 
+    const booking = await VaccinationBooking.findOne({
+      _id: bookingId,
+      user: req.user.userId
+    });
 
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const campaign = await VaccinationCampaign.findById(booking.campaign);
+    if (campaign) {
+      campaign.availableSlots = campaign.availableSlots + 1;
+      await campaign.save();
+    }
+
+    await VaccinationBooking.findByIdAndUpdate(bookingId, { bookingStatus: "Cancelled" });
+
+    return res.json({ message: "Booking cancelled successfully" });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message
+    });
+  }
+}
 
 module.exports = {
   listCampaigns,
@@ -193,6 +243,7 @@ module.exports = {
   updateCampaign,
   deleteCampaign,
   bookCampaignAppointment,
-  listMyBookings
+  listMyBookings,
+  cancelBooking
 };
 
