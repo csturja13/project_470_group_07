@@ -52,7 +52,8 @@ async function listPets(req, res) {
     const { q, species } = req.query;
 
     const filter = {
-      approvalStatus: "Approved"
+      approvalStatus: "Approved",
+      isAdopted: { $ne: true }
     };
 
     if (q) {
@@ -118,6 +119,10 @@ async function requestAdoption(req, res) {
     const pet = await Pet.findById(id);
     if (!pet) {
       return res.status(404).json({ message: "Pet not found" });
+    }
+
+    if (pet.isAdopted) {
+      return res.status(409).json({ message: "This pet is already adopted" });
     }
 
     if (pet.owner && pet.owner.toString() === req.user.userId) {

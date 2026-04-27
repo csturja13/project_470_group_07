@@ -5,6 +5,7 @@ const Pet = require("../models/Pet");
 async function buildPetAdoptionContext(petId, userId) {
   const pet = await Pet.findById(petId).populate("owner", "name email");
   if (!pet) return { error: "Pet not found", status: 404 };
+  if (pet.isAdopted) return { error: "This pet is already adopted", status: 409 };
 
   const pendingRequest = await AdoptionRequest.findOne({
     pet: petId,
@@ -111,6 +112,10 @@ async function decideAdoptionRequest(req, res) {
 
     request.status = decision;
     await request.save();
+
+    if (decision === "Accepted") {
+      await Pet.findByIdAndUpdate(request.pet, { isAdopted: true });
+    }
 
     const updated = await AdoptionRequest.findById(request._id)
       .populate("owner", "name email")

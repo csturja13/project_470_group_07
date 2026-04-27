@@ -46,6 +46,11 @@ const petSchema = new mongoose.Schema(
       default: "Pending"
     },
 
+    isAdopted: {
+      type: Boolean,
+      default: false
+    },
+
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

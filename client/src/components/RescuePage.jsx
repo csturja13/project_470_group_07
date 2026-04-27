@@ -23,6 +23,7 @@ function fmtDistance(km) {
 }
 
 export default function RescuePage({ user }) {
+  const [accessRole, setAccessRole] = useState("");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -45,20 +46,28 @@ export default function RescuePage({ user }) {
     () => requests.find((r) => r._id === selectedId) || null,
     [requests, selectedId]
   );
+  const isRequesterView = accessRole === "requester";
+  const isRescuerView = accessRole === "rescuer";
+  const mapRequests = useMemo(
+    () => requests.filter((r) => r.status !== "Resolved"),
+    [requests]
+  );
 
   async function loadRequests() {
-    if (!user) return;
+    if (!user || !accessRole) return;
     setLoading(true);
     setErr("");
     try {
-      const res = await api.get("/api/rescue", {
-        params: {
-          status: statusFilter,
-          lat: center.lat,
-          lng: center.lng,
-          radiusKm
-        }
-      });
+      const res = isRequesterView
+        ? await api.get("/api/rescue/mine")
+        : await api.get("/api/rescue", {
+            params: {
+              status: statusFilter,
+              lat: center.lat,
+              lng: center.lng,
+              radiusKm
+            }
+          });
       setRequests(res.data);
       if (selectedId && !res.data.some((r) => r._id === selectedId)) {
         setSelectedId("");
@@ -73,14 +82,19 @@ export default function RescuePage({ user }) {
 
   useEffect(() => {
     loadRequests();
-  }, [user, statusFilter, radiusKm, center.lat, center.lng]);
+  }, [user, accessRole, isRequesterView, statusFilter, radiusKm, center.lat, center.lng]);
 
   // Near real-time refresh.
   useEffect(() => {
-    if (!user) return undefined;
+    if (!user || !accessRole) return undefined;
     const timer = setInterval(loadRequests, 10000);
     return () => clearInterval(timer);
-  }, [user, statusFilter, radiusKm, center.lat, center.lng]);
+  }, [user, accessRole, isRequesterView, statusFilter, radiusKm, center.lat, center.lng]);
+
+  useEffect(() => {
+    setSelectedId("");
+    setRoutePoints([]);
+  }, [accessRole]);
 
   async function useCurrentLocationForCenter() {
     if (!navigator.geolocation) {
@@ -120,6 +134,7 @@ export default function RescuePage({ user }) {
 
   async function submitRequest(e) {
     e.preventDefault();
+    if (!isRequesterView) return;
     setErr("");
     setMsg("");
     try {
@@ -140,6 +155,7 @@ export default function RescuePage({ user }) {
   }
 
   async function assignRequest(id) {
+    if (!isRescuerView) return;
     setErr("");
     setMsg("");
     try {
@@ -152,6 +168,7 @@ export default function RescuePage({ user }) {
   }
 
   async function updateStatus(id, status) {
+    if (!isRescuerView) return;
     setErr("");
     setMsg("");
     try {
@@ -164,6 +181,7 @@ export default function RescuePage({ user }) {
   }
 
   async function buildRoutePreview(request) {
+    if (!isRescuerView) return;
     setSelectedId(request._id);
     setRoutePoints([]);
     const from = `${center.lng},${center.lat}`;
@@ -187,45 +205,80 @@ export default function RescuePage({ user }) {
     }
   }
 
+  async function deleteRequest(id) {
+    if (!isRequesterView) return;
+    setErr("");
+    setMsg("");
+    try {
+      await api.delete(`/api/rescue/${id}`);
+      setMsg("Rescue request removed.");
+      await loadRequests();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to remove rescue request");
+    }
+  }
+
   if (!user) return <div className="card">Please login to access rescue system.</div>;
+  if (!accessRole) {
+    return (
+      <div className="card" style={{ display: "grid", gap: 12 }}>
+        <h2 style={{ margin: 0 }}>Rescue System Entry</h2>
+        <div style={{ opacity: 0.9 }}>
+          Choose how you want to enter this page.
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button className="btn" onClick={() => setAccessRole("requester")}>Enter as Requester</button>
+          <button className="btn" onClick={() => setAccessRole("rescuer")}>Enter as Rescuer</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <div className="card">
         <h2>Rescue System</h2>
         <div style={{ opacity: 0.9 }}>
-          Post nearby pet emergencies. Rescue workers can discover and respond to requests near their location.
+          {isRequesterView
+            ? "Requester mode: post rescue alerts and manage your own untaken requests."
+            : "Rescuer mode: view hotspots, preview routes, and complete assigned rescues."}
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <button className="btn secondary" onClick={() => setAccessRole("")}>Switch Entry Role</button>
         </div>
         {err && <div className="badge" style={{ marginTop: 10, background: "rgba(255,0,0,0.15)" }}>{err}</div>}
         {msg && <div className="badge" style={{ marginTop: 10, background: "rgba(0,255,120,0.15)" }}>{msg}</div>}
       </div>
 
-      <div className="card">
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <button className="btn" onClick={useCurrentLocationForCenter}>Use My Location as Rescue Center</button>
-          <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ maxWidth: 220 }}>
-            <option value="Open">Open</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Resolved">Resolved</option>
-            <option value="All">All</option>
-          </select>
-          <input
-            className="input"
-            type="number"
-            min={1}
-            max={200}
-            value={radiusKm}
-            onChange={(e) => setRadiusKm(Number(e.target.value) || 25)}
-            style={{ maxWidth: 180 }}
-            placeholder="Radius km"
-          />
-          {loading && <span style={{ opacity: 0.8 }}>Loading requests...</span>}
+      {isRescuerView && (
+        <div className="card">
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            <button className="btn" onClick={useCurrentLocationForCenter}>Use My Location as Rescue Center</button>
+            <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ maxWidth: 220 }}>
+              <option value="Open">Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+              <option value="All">All</option>
+            </select>
+            <input
+              className="input"
+              type="number"
+              min={1}
+              max={200}
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(Number(e.target.value) || 25)}
+              style={{ maxWidth: 180 }}
+              placeholder="Radius km"
+            />
+            {loading && <span style={{ opacity: 0.8 }}>Loading requests...</span>}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Post Rescue Request</h3>
-        <form onSubmit={submitRequest} style={{ display: "grid", gap: 10 }}>
+      {isRequesterView && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Post Rescue Request</h3>
+          <form onSubmit={submitRequest} style={{ display: "grid", gap: 10 }}>
           <input
             className="input"
             placeholder="Short title (e.g. Injured dog near market)"
@@ -280,56 +333,77 @@ export default function RescuePage({ user }) {
             <button className="btn" type="button" onClick={useCurrentLocationForForm}>Use My Current Coordinates</button>
             <button className="btn" type="submit">Post Rescue Alert</button>
           </div>
-        </form>
-      </div>
-
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Rescue Hotspots Map</h3>
-        <div style={{ height: 460, borderRadius: 14, overflow: "hidden" }}>
-          <MapContainer center={[center.lat, center.lng]} zoom={12} style={{ height: "100%", width: "100%" }}>
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <Marker position={[center.lat, center.lng]}>
-              <Popup>Rescue center / your location</Popup>
-            </Marker>
-
-            {requests.map((r) => (
-              <Circle
-                key={r._id}
-                center={[r.location.lat, r.location.lng]}
-                radius={130}
-                pathOptions={{ color: "red", fillColor: "red", fillOpacity: 0.34 }}
-                eventHandlers={{ click: () => buildRoutePreview(r) }}
-              >
-                <Popup>
-                  <b>{r.title}</b><br />
-                  {r.category} - {r.status}<br />
-                  Distance: {fmtDistance(r.distanceKm)}
-                </Popup>
-              </Circle>
-            ))}
-
-            {selected && (
-              <Marker position={[selected.location.lat, selected.location.lng]}>
-                <Popup>{selected.title}</Popup>
-              </Marker>
-            )}
-
-            {routePoints.length > 1 && (
-              <Polyline positions={routePoints} pathOptions={{ color: "#22c55e", weight: 5 }} />
-            )}
-          </MapContainer>
+          </form>
         </div>
-      </div>
+      )}
+
+      {isRescuerView && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Rescue Hotspots Map</h3>
+          <div style={{ height: 460, borderRadius: 14, overflow: "hidden" }}>
+            <MapContainer center={[center.lat, center.lng]} zoom={12} style={{ height: "100%", width: "100%" }}>
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker position={[center.lat, center.lng]}>
+                <Popup>Rescue center / your location</Popup>
+              </Marker>
+
+              {mapRequests.map((r) => (
+                <Circle
+                  key={r._id}
+                  center={[r.location.lat, r.location.lng]}
+                  radius={130}
+                  pathOptions={{ color: "red", fillColor: "red", fillOpacity: 0.34 }}
+                  eventHandlers={{ click: () => buildRoutePreview(r) }}
+                >
+                  <Popup>
+                    <div style={{ display: "grid", gap: 6, minWidth: 180 }}>
+                      <b>{r.title}</b>
+                      <span>Status: {r.status}</span>
+                      <span>Distance: {fmtDistance(r.distanceKm)}</span>
+                      {isRescuerView && r.status !== "Resolved" && !r.assignedRescuer && (
+                        <button
+                          className="btn"
+                          onClick={() => assignRequest(r._id)}
+                          style={{ width: "100%" }}
+                        >
+                          Take Rescue
+                        </button>
+                      )}
+                      {isRescuerView && r.assignedRescuer && (
+                        <span style={{ opacity: 0.85 }}>
+                          Taken by: {r.assignedRescuer?.name || "Another rescuer"}
+                        </span>
+                      )}
+                    </div>
+                  </Popup>
+                </Circle>
+              ))}
+
+              {selected && (
+                <Marker position={[selected.location.lat, selected.location.lng]}>
+                  <Popup>{selected.title}</Popup>
+                </Marker>
+              )}
+
+              {routePoints.length > 1 && (
+                <Polyline positions={routePoints} pathOptions={{ color: "#22c55e", weight: 5 }} />
+              )}
+            </MapContainer>
+          </div>
+        </div>
+      )}
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Nearby Rescue Requests</h3>
+        <h3 style={{ marginTop: 0 }}>{isRequesterView ? "Rescue Requests" : "Nearby Rescue Requests"}</h3>
         {!requests.length && <div style={{ opacity: 0.8 }}>No rescue requests found in selected area.</div>}
         <div style={{ display: "grid", gap: 10 }}>
           {requests.map((r) => {
             const assignedToMe = r.assignedRescuer?._id === user._id;
+            const postedByMe = r.postedBy?._id === user._id;
+            const canRequesterRemove = postedByMe && !r.assignedRescuer;
             return (
               <div key={r._id} className="badge" style={{ borderRadius: 12, padding: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -345,17 +419,21 @@ export default function RescuePage({ user }) {
                 </div>
 
                 <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button className="btn" onClick={() => buildRoutePreview(r)}>Preview Path</button>
+                  {isRescuerView && <button className="btn" onClick={() => buildRoutePreview(r)}>Preview Path</button>}
 
-                  {user.role === "rescue" && r.status !== "Resolved" && !r.assignedRescuer && (
+                  {isRescuerView && r.status !== "Resolved" && !r.assignedRescuer && (
                     <button className="btn" onClick={() => assignRequest(r._id)}>Take Request</button>
                   )}
 
-                  {user.role === "rescue" && assignedToMe && (
+                  {isRescuerView && assignedToMe && (
                     <>
                       <button className="btn" onClick={() => updateStatus(r._id, "In Progress")}>Set In Progress</button>
                       <button className="btn secondary" onClick={() => updateStatus(r._id, "Resolved")}>Mark Resolved</button>
                     </>
+                  )}
+
+                  {isRequesterView && canRequesterRemove && (
+                    <button className="btn secondary" onClick={() => deleteRequest(r._id)}>Remove Request</button>
                   )}
                 </div>
               </div>

@@ -32,7 +32,8 @@ router.get("/:id/details", async (req, res) => {
 
     const pets = await Pet.find({
       owner: shop._id,
-      approvalStatus: { $in: ["Approved", "approved"] }
+      approvalStatus: { $in: ["Approved", "approved"] },
+      isAdopted: { $ne: true }
     }).sort({ createdAt: -1 });
 
     const items = await ShopItem.find({ owner: shop._id }).sort({ createdAt: -1 });
