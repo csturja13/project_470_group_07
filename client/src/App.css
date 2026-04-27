@@ -85,6 +85,55 @@ a:hover { color: white; }
 .btn:hover { transform: translateY(-2px); opacity: 0.95; }
 .btn.secondary { background: linear-gradient(90deg, #f43f5e, #be123c); }
 
+/* ================= MODAL ================= */
+.modalOverlay{
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+}
+
+.modalCard{
+  width: min(720px, 96vw);
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 22px;
+  box-shadow: 0 26px 70px rgba(0,0,0,0.55);
+  padding: 22px;
+  transform: translateY(0);
+  animation: modalPop 160ms ease-out;
+}
+
+.modalTitle{
+  font-weight: 950;
+  font-size: 24px;
+  letter-spacing: 0.2px;
+  margin-bottom: 10px;
+}
+
+.modalBody{
+  font-size: 16px;
+  opacity: 0.95;
+  line-height: 1.55;
+}
+
+.modalActions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+@keyframes modalPop{
+  from { transform: translateY(10px) scale(0.985); opacity: 0.0; }
+  to { transform: translateY(0) scale(1); opacity: 1.0; }
+}
+
 /* Badge */
 .badge {
   background: rgba(255, 255, 255, 0.16);

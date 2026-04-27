@@ -1,14 +1,20 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
+import { useCart } from "../cart/CartContext";
+import Modal from "./Modal";
 
 export default function PetShopDetailsPage({ user }) {
   const { id } = useParams();
+  const nav = useNavigate();
+  const cart = useCart();
   const [shop, setShop] = useState(null);
   const [pets, setPets] = useState([]);
   const [items, setItems] = useState([]);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [purchaseText, setPurchaseText] = useState("");
 
   const [itemForm, setItemForm] = useState({
     name: "",
@@ -125,6 +131,36 @@ export default function PetShopDetailsPage({ user }) {
 
   return (
     <div style={{ display: "grid", gap: 18 }}>
+      <Modal
+        open={purchaseOpen}
+        title="Purchase successful"
+        onClose={() => setPurchaseOpen(false)}
+        actions={
+          <>
+            <button className="btn secondary" type="button" onClick={() => setPurchaseOpen(false)}>
+              Continue shopping
+            </button>
+            <button
+              className="btn"
+              type="button"
+              onClick={() => {
+                setPurchaseOpen(false);
+                nav("/cart");
+              }}
+            >
+              View cart
+            </button>
+          </>
+        }
+      >
+        <div style={{ fontSize: 18 }}>
+          {purchaseText || "Thanks for purchasing."}
+        </div>
+        <div style={{ opacity: 0.85, marginTop: 10 }}>
+          We’ll contact you soon with delivery details.
+        </div>
+      </Modal>
+
       <div className="card">
         <h2 style={{ marginTop: 0 }}>{shop.name}</h2>
         <div>{shop.email}</div>
@@ -313,14 +349,35 @@ export default function PetShopDetailsPage({ user }) {
                 <div className="petMeta">{p.description || "No description"}</div>
 
                 {canBuy && (
-                  <button
-                    className="btn"
-                    type="button"
-                    onClick={() => alert(`Thanks for purchasing ${p.name}`)}
-                    style={{ marginTop: 10 }}
-                  >
-                    Buy
-                  </button>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+                    <button
+                      className="btn secondary"
+                      type="button"
+                      onClick={() => {
+                        cart.add({
+                          kind: "pet",
+                          id: p._id,
+                          name: `${p.name} — ${p.species}`,
+                          price: p.price ?? "",
+                          imageUrl: p.imagePath ? `http://localhost:5000${p.imagePath}` : "",
+                          shopId: shop?._id || id
+                        });
+                        setMsg(`Added to cart: ${p.name}`);
+                      }}
+                    >
+                      Add to cart
+                    </button>
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={() => {
+                        setPurchaseText(`Thanks for purchasing ${p.name}`);
+                        setPurchaseOpen(true);
+                      }}
+                    >
+                      Buy now
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -353,14 +410,37 @@ export default function PetShopDetailsPage({ user }) {
                 <div className="petMeta">{item.description}</div>
 
                 {canBuy && (
-                  <button
-                    className="btn"
-                    type="button"
-                    onClick={() => alert(`Thanks for purchasing ${item.name}`)}
-                    style={{ marginTop: 10 }}
-                  >
-                    Buy
-                  </button>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+                    <button
+                      className="btn secondary"
+                      type="button"
+                      onClick={() => {
+                        cart.add({
+                          kind: "shop_item",
+                          id: item._id,
+                          name: item.name,
+                          category: item.category,
+                          price: item.price ?? "",
+                          stock: item.stock ?? null,
+                          imageUrl: item.imagePath ? `http://localhost:5000${item.imagePath}` : "",
+                          shopId: shop?._id || id
+                        });
+                        setMsg(`Added to cart: ${item.name}`);
+                      }}
+                    >
+                      Add to cart
+                    </button>
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={() => {
+                        setPurchaseText(`Thanks for purchasing ${item.name}`);
+                        setPurchaseOpen(true);
+                      }}
+                    >
+                      Buy now
+                    </button>
+                  </div>
                 )}
               </div>
             ))}

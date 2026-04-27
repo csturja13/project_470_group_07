@@ -7,6 +7,8 @@ import VaccinationCampaignsPage from "./components/VaccinationCampaignsPage";
 import PetShopDetailsPage from "./components/PetShopDetailsPage";
 import RescuePage from "./components/RescuePage";
 import useDeletePet from "./hooks/useDeletePet";
+import { CartProvider, useCart } from "./cart/CartContext";
+import CartPage from "./cart/CartPage";
 
 /* ================= AUTH HELPERS ================= */
 function saveAuth(token, user) {
@@ -35,6 +37,8 @@ function Navbar({
 }) {
   const nav = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const cart = useCart();
+  const cartCount = cart.items.reduce((sum, x) => sum + (Number(x.qty) || 0), 0);
 
   return (
     <div className="card" style={{ marginBottom: 14 }}>
@@ -130,6 +134,11 @@ function Navbar({
         >
           <Link to="/" style={{ fontSize: 19 }}>Home</Link>
           {user && <Link to="/petshops" style={{ fontSize: 19 }}>Pet Shops</Link>}
+          {user?.role === "user" && (
+            <Link to="/cart" style={{ fontSize: 19 }}>
+              Cart{cartCount ? ` (${cartCount})` : ""}
+            </Link>
+          )}
           {user && <Link to="/profile" style={{ fontSize: 19 }}>Profile</Link>}
           {user && <Link to="/documents" style={{ fontSize: 19 }}>Documents</Link>}
           {user && <Link to="/vaccination-campaigns" style={{ fontSize: 19 }}>Vaccination Campaigns</Link>}
@@ -1342,45 +1351,47 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="container">
-        <Navbar
-          user={user}
-          onLogout={onLogout}
-          searchText={searchText}
-          setSearchText={setSearchText}
-          category={category}
-          setCategory={setCategory}
-          sort={sort}
-          setSort={setSort}
-          onSearchEnter={loadPets}
-        />
-
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <Home
-                user={user}
-                pets={pets}
-                loading={loading}
-                error={err}
-                onRefresh={loadPets}
-              />
-            }
+      <CartProvider>
+        <div className="container">
+          <Navbar
+            user={user}
+            onLogout={onLogout}
+            searchText={searchText}
+            setSearchText={setSearchText}
+            category={category}
+            setCategory={setCategory}
+            sort={sort}
+            setSort={setSort}
+            onSearchEnter={loadPets}
           />
-          <Route path="/signup" element={<Signup onAuth={onAuth} />} />
-          <Route path="/login" element={<Login onAuth={onAuth} />} />
-          <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
-          <Route path="/documents" element={<DocumentsPage user={user} />} />
-          <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
-          <Route path="/rescue" element={<RescuePage user={user} />} />
-          <Route path="/admin" element={<AdminPanel user={user} onRefresh={loadPets} />} />
-          <Route path="/pets/:id" element={<PetDetails user={user} onRefresh={loadPets} />} />
-          <Route path="/petshops" element={<PetShops user={user} />} />
-          <Route path="/petshops/:id" element={<PetShopDetailsPage user={user} />} />
-          
-        </Routes>
-      </div>
+
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Home
+                  user={user}
+                  pets={pets}
+                  loading={loading}
+                  error={err}
+                  onRefresh={loadPets}
+                />
+              }
+            />
+            <Route path="/signup" element={<Signup onAuth={onAuth} />} />
+            <Route path="/login" element={<Login onAuth={onAuth} />} />
+            <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
+            <Route path="/documents" element={<DocumentsPage user={user} />} />
+            <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
+            <Route path="/rescue" element={<RescuePage user={user} />} />
+            <Route path="/cart" element={<CartPage user={user} />} />
+            <Route path="/admin" element={<AdminPanel user={user} onRefresh={loadPets} />} />
+            <Route path="/pets/:id" element={<PetDetails user={user} onRefresh={loadPets} />} />
+            <Route path="/petshops" element={<PetShops user={user} />} />
+            <Route path="/petshops/:id" element={<PetShopDetailsPage user={user} />} />
+          </Routes>
+        </div>
+      </CartProvider>
     </BrowserRouter>
   );
 }
