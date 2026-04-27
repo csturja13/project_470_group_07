@@ -16,6 +16,8 @@ const vaccinationCampaignRoutes = require("./routes/vaccinationCampaignRoutes");
 const shopItemRoutes = require("./routes/shopItemRoutes");
 const timelineRoutes = require("./routes/timelineRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const adoptionRoutes = require("./routes/adoptionRoutes");
+const rescueRoutes = require("./routes/rescueRoutes");
 
 
 const app = express();
@@ -39,6 +41,8 @@ app.use("/api/vaccination-campaigns", vaccinationCampaignRoutes);
 app.use("/api/shop-items", shopItemRoutes);
 app.use("/api/timeline", timelineRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/adoptions", adoptionRoutes);
+app.use("/api/rescue", rescueRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {

@@ -1,4 +1,5 @@
 const Pet = require("../models/Pet");
+const AdoptionRequest = require("../models/AdoptionRequest");
 
 // Create pet post
 async function createPet(req, res) {
@@ -122,6 +123,27 @@ async function requestAdoption(req, res) {
     if (pet.owner && pet.owner.toString() === req.user.userId) {
       return res.status(403).json({ message: "You cannot request adoption for your own pet" });
     }
+
+    const existingPending = await AdoptionRequest.findOne({
+      pet: id,
+      status: "Pending"
+    });
+
+    if (existingPending) {
+      if (existingPending.requester.toString() === req.user.userId) {
+        return res.status(409).json({ message: "You already requested adoption for this pet" });
+      }
+      return res.status(409).json({
+        message: "Adoption currently unavailable until owner decides on existing request"
+      });
+    }
+
+    await AdoptionRequest.create({
+      pet: pet._id,
+      requester: req.user.userId,
+      owner: pet.owner,
+      status: "Pending"
+    });
 
     return res.json({ message: "Adoption request sent successfully" });
   } catch (err) {

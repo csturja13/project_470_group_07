@@ -5,8 +5,8 @@ import { api, setAuthToken } from "./api";
 import DocumentsPage from "./components/DocumentsPage";
 import VaccinationCampaignsPage from "./components/VaccinationCampaignsPage";
 import PetShopDetailsPage from "./components/PetShopDetailsPage";
+import RescuePage from "./components/RescuePage";
 import useDeletePet from "./hooks/useDeletePet";
-import useAdoptPet from "./hooks/useAdoptPet";
 
 /* ================= AUTH HELPERS ================= */
 function saveAuth(token, user) {
@@ -33,6 +33,9 @@ function Navbar({
   setSort,
   onSearchEnter
 }) {
+  const nav = useNavigate();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   return (
     <div className="card" style={{ marginBottom: 14 }}>
       <div
@@ -44,11 +47,10 @@ function Navbar({
       >
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            display: "grid",
+            gridTemplateColumns: "1fr auto 1fr",
             alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12
+            gap: 10
           }}
         >
           <div
@@ -59,8 +61,8 @@ function Navbar({
               flexWrap: "wrap"
             }}
           >
-            <div style={{ fontSize: 22 }}>🐾</div>
-            <b style={{ fontSize: 25 }}>Pawlytics</b>
+            <div style={{ fontSize: 26 }}>🐾</div>
+            <b style={{ fontSize: 31, letterSpacing: 0.4 }}>Pawlytics</b>
 
             <Link to="/">Home</Link>
             {user && <Link to="/petshops">Pet Shops</Link>}
@@ -71,33 +73,64 @@ function Navbar({
             {!user && <Link to="/signup">Signup</Link>}
             {!user && <Link to="/login">Login</Link>}
           </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              flexWrap: "wrap"
-            }}
-          >
+          </div>
+          <div style={{ justifySelf: "end", position: "relative" }}>
             {user ? (
               <>
-                {user.role === "admin" && (
-                  <Link to="/admin" className="btn secondary">
-                    Admin Panel
-                  </Link>
-                )}
-
-                <span className="badge">
-                  {user.name} ({user.role})
-                </span>
-
-                <button className="btn" onClick={onLogout}>
-                  Logout
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={() => setShowProfileMenu((s) => !s)}
+                  style={{
+                    padding: "9px 14px",
+                    fontSize: 14,
+                    borderRadius: 999
+                  }}
+                >
+                  {user.name}
                 </button>
+                {showProfileMenu && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 8px)",
+                      right: 0,
+                      minWidth: 180,
+                      background: "#1e293b",
+                      border: "1px solid rgba(255, 255, 255, 0.2)",
+                      borderRadius: 12,
+                      padding: 8,
+                      zIndex: 20,
+                      display: "grid",
+                      gap: 6,
+                      boxShadow: "0 10px 22px rgba(0,0,0,0.35)"
+                    }}
+                  >
+                    <Link
+                      to="/profile"
+                      className="btn"
+                      onClick={() => setShowProfileMenu(false)}
+                      style={{ textAlign: "center", fontSize: 14, padding: "9px 12px" }}
+                    >
+                      Profile
+                    </Link>
+                    <button
+                      className="btn secondary"
+                      type="button"
+                      onClick={() => {
+                        setShowProfileMenu(false);
+                        onLogout();
+                        nav("/login");
+                      }}
+                      style={{ fontSize: 14, padding: "9px 12px" }}
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
               </>
             ) : (
-              <span className="badge">Not logged in</span>
+              <span className="badge" style={{ fontSize: 14, padding: "9px 14px" }}>Not logged in</span>
             )}
           </div>
         </div>
@@ -105,44 +138,96 @@ function Navbar({
         <div
           style={{
             display: "flex",
-            gap: 12,
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 20,
             flexWrap: "wrap"
           }}
         >
-          <input
-            className="input"
-            placeholder="Search pets… (Enter)"
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSearchEnter();
+          <Link to="/" style={{ fontSize: 19 }}>Home</Link>
+          {user && <Link to="/petshops" style={{ fontSize: 19 }}>Pet Shops</Link>}
+          {user && <Link to="/profile" style={{ fontSize: 19 }}>Profile</Link>}
+          {user && <Link to="/documents" style={{ fontSize: 19 }}>Documents</Link>}
+          {user && <Link to="/vaccination-campaigns" style={{ fontSize: 19 }}>Vaccination Campaigns</Link>}
+          {user && <Link to="/rescue" style={{ fontSize: 19 }}>Rescue System</Link>}
+          {!user && <Link to="/signup" style={{ fontSize: 19 }}>Signup</Link>}
+          {!user && <Link to="/login" style={{ fontSize: 19 }}>Login</Link>}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: 14,
+            flexWrap: "wrap"
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: 0,
+              flexWrap: "nowrap",
+              alignItems: "stretch",
+              width: "min(100%, 760px)"
             }}
-            style={{ flex: "1 1 320px", minWidth: 260 }}
-          />
-
-          <select
-            className="select"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            style={{ minWidth: 220 }}
           >
-            <option value="">Category → All</option>
-            <option value="Dog">Category → Dog</option>
-            <option value="Cat">Category → Cat</option>
-            <option value="Bird">Category → Bird</option>
-            <option value="Other">Category → Other</option>
-          </select>
+            <input
+              className="input"
+              placeholder="Search pets… (Enter)"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onSearchEnter();
+              }}
+              style={{
+                flex: 1.25,
+                minWidth: 0,
+                borderRadius: "12px 0 0 12px",
+                padding: "11px 13px",
+                fontSize: 16
+              }}
+            />
 
-          <select
-            className="select"
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            style={{ minWidth: 220 }}
-          >
-            <option value="">Sort → Default</option>
-            <option value="price_asc">Sort → Price: Low → High</option>
-            <option value="price_desc">Sort → Price: High → Low</option>
-          </select>
+            <select
+              className="select"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                borderRadius: 0,
+                borderLeftWidth: 0,
+                padding: "11px 13px",
+                fontSize: 16
+              }}
+            >
+              <option value="">Category → All</option>
+              <option value="Dog">Category → Dog</option>
+              <option value="Cat">Category → Cat</option>
+              <option value="Bird">Category → Bird</option>
+              <option value="Other">Category → Other</option>
+            </select>
+
+            <select
+              className="select"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                borderRadius: "0 12px 12px 0",
+                borderLeftWidth: 0,
+                padding: "11px 13px",
+                fontSize: 16
+              }}
+            >
+              <option value="">Sort → Default</option>
+              <option value="price_asc">Sort → Price: Low → High</option>
+              <option value="price_desc">Sort → Price: High → Low</option>
+            </select>
+          </div>
+
         </div>
       </div>
 
@@ -416,33 +501,125 @@ function PetDetails({ user, onRefresh }) {
   const [pet, setPet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [adoptionContext, setAdoptionContext] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [chatText, setChatText] = useState("");
+  const [chatErr, setChatErr] = useState("");
+  const [chatInfo, setChatInfo] = useState("");
   const deletePet = useDeletePet(onRefresh);
-  const requestAdoption = useAdoptPet();
 
-  useEffect(() => {
-    async function loadPet() {
-      setLoading(true);
-      setErr("");
+  async function loadPet() {
+    setLoading(true);
+    setErr("");
 
-      try {
-        const res = await api.get(`/api/pets/${id}`);
-        setPet(res.data);
-      } catch (e) {
-        setErr(e?.response?.data?.message || "Failed to load pet details");
-      } finally {
-        setLoading(false);
-      }
+    try {
+      const res = await api.get(`/api/pets/${id}`);
+      setPet(res.data);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load pet details");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadAdoptionContext() {
+    if (!user) {
+      setAdoptionContext(null);
+      setMessages([]);
+      return;
     }
 
-    loadPet();
-  }, [id]);
+    try {
+      const res = await api.get(`/api/adoptions/pets/${id}/context`);
+      setAdoptionContext(res.data);
+
+      if (res.data?.pendingRequest?._id) {
+        const msgRes = await api.get(`/api/adoptions/${res.data.pendingRequest._id}/messages`);
+        setMessages(msgRes.data);
+      } else {
+        setMessages([]);
+      }
+    } catch (e) {
+      setAdoptionContext(null);
+      setMessages([]);
+      setChatErr(e?.response?.data?.message || "Failed to load adoption details");
+    }
+  }
+
+  useEffect(() => {
+    async function load() {
+      await loadPet();
+      await loadAdoptionContext();
+    }
+    load();
+  }, [id, user?._id]);
+
+  useEffect(() => {
+    if (!adoptionContext?.pendingRequest?._id) return undefined;
+
+    const timer = setInterval(async () => {
+      try {
+        const msgRes = await api.get(`/api/adoptions/${adoptionContext.pendingRequest._id}/messages`);
+        setMessages(msgRes.data);
+      } catch {
+        // ignore polling errors and keep latest visible state
+      }
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [adoptionContext?.pendingRequest?._id]);
 
   const isOwner = user && pet?.owner && pet.owner._id === user._id;
-  const canRequestAdoption = user && pet?.owner && pet.owner._id !== user._id;
+  const pendingRequest = adoptionContext?.pendingRequest || null;
+  const myLatestRequest = adoptionContext?.myLatestRequest || null;
+  const myPendingRequest =
+    pendingRequest && pendingRequest.requester?._id === user?._id ? pendingRequest : null;
+  const canRequestAdoption = !!(user && adoptionContext?.canRequest);
+  const isBlockedForOthers = !!(user && !isOwner && pendingRequest && !myPendingRequest);
 
   if (loading) return <div className="card">Loading pet details...</div>;
   if (err) return <div className="card">{err}</div>;
   if (!pet) return <div className="card">Pet not found.</div>;
+
+  async function handleAdoptionRequest() {
+    setChatErr("");
+    setChatInfo("");
+    try {
+      await api.post(`/api/adoptions/pets/${id}/request`);
+      setChatInfo("Adoption request sent. You can now chat with the owner.");
+      await loadAdoptionContext();
+    } catch (e) {
+      setChatErr(e?.response?.data?.message || "Failed to send request");
+    }
+  }
+
+  async function handleDecision(decision) {
+    if (!pendingRequest?._id) return;
+    setChatErr("");
+    setChatInfo("");
+    try {
+      await api.patch(`/api/adoptions/${pendingRequest._id}/decision`, { decision });
+      setChatInfo(`Request ${decision.toLowerCase()} successfully.`);
+      await loadAdoptionContext();
+    } catch (e) {
+      setChatErr(e?.response?.data?.message || "Failed to update decision");
+    }
+  }
+
+  async function sendChatMessage(e) {
+    e.preventDefault();
+    if (!pendingRequest?._id || !chatText.trim()) return;
+    setChatErr("");
+    setChatInfo("");
+    try {
+      await api.post(`/api/adoptions/${pendingRequest._id}/messages`, { text: chatText });
+      setChatText("");
+      const msgRes = await api.get(`/api/adoptions/${pendingRequest._id}/messages`);
+      setMessages(msgRes.data);
+    } catch (e2) {
+      setChatErr(e2?.response?.data?.message || "Failed to send message");
+    }
+  }
 
   return (
     <div className="card">
@@ -462,14 +639,12 @@ function PetDetails({ user, onRefresh }) {
         className="petDetailsImg"
         />
         <div className="petDetailsActions">
-          {canRequestAdoption && (
-          <button
-            className="btn"
-            onClick={() => requestAdoption(id)}
-          >
-            Request to Adopt
-          </button>
-        )}
+          {canRequestAdoption && <button className="btn" onClick={handleAdoptionRequest}>Request to Adopt</button>}
+          {isBlockedForOthers && (
+            <button className="btn secondary" disabled style={{ opacity: 0.7, cursor: "not-allowed" }}>
+              Unavailable (Pending Owner Decision)
+            </button>
+          )}
 
         {isOwner && (
           <button
@@ -498,6 +673,62 @@ function PetDetails({ user, onRefresh }) {
         <h3>Owner Information</h3>
         <div><b>Name:</b> {pet.owner?.name || "Not available"}</div>
         <div><b>Email:</b> {pet.owner?.email || "Not available"}</div>
+
+        <hr style={{ margin: "16px 0" }} />
+        <h3>Adoption Request & Chat</h3>
+        {chatErr && <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>{chatErr}</div>}
+        {chatInfo && <div className="badge" style={{ background: "rgba(0,255,120,0.15)" }}>{chatInfo}</div>}
+
+        {!user && <div>Please login to request adoption.</div>}
+
+        {user && !pendingRequest && (
+          <div style={{ opacity: 0.9 }}>
+            {myLatestRequest?.status === "Rejected"
+              ? "Your last request was rejected. You can request again."
+              : "No pending adoption request for this pet right now."}
+          </div>
+        )}
+
+        {user && pendingRequest && (
+          <div className="chatBox">
+            <div className="chatHeader">
+              <div><b>Requester:</b> {pendingRequest.requester?.name || "Unknown"}</div>
+              <div><b>Status:</b> {pendingRequest.status}</div>
+            </div>
+
+            <div className="chatMessages">
+              {!messages.length && <div style={{ opacity: 0.8 }}>No messages yet.</div>}
+              {messages.map((m) => {
+                const mine = m.sender?._id === user._id;
+                return (
+                  <div key={m._id} className={`chatMessage ${mine ? "mine" : ""}`}>
+                    <div className="chatSender">{m.sender?.name || "User"}</div>
+                    <div>{m.text}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {pendingRequest.status === "Pending" && (isOwner || myPendingRequest) && (
+              <form onSubmit={sendChatMessage} className="chatComposer">
+                <input
+                  className="input"
+                  value={chatText}
+                  onChange={(e) => setChatText(e.target.value)}
+                  placeholder="Type a message..."
+                />
+                <button className="btn" type="submit">Send</button>
+              </form>
+            )}
+
+            {isOwner && pendingRequest.status === "Pending" && (
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+                <button className="btn" onClick={() => handleDecision("Accepted")}>Approve</button>
+                <button className="btn secondary" onClick={() => handleDecision("Rejected")}>Reject</button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       </div>
@@ -1158,6 +1389,7 @@ export default function App() {
           <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
           <Route path="/documents" element={<DocumentsPage user={user} />} />
           <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
+          <Route path="/rescue" element={<RescuePage user={user} />} />
           <Route path="/admin" element={<AdminPanel user={user} onRefresh={loadPets} />} />
           <Route path="/pets/:id" element={<PetDetails user={user} onRefresh={loadPets} />} />
           <Route path="/petshops" element={<PetShops user={user} />} />
