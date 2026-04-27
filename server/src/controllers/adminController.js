@@ -1,4 +1,5 @@
 const Pet = require("../models/Pet");
+const Timeline = require("../models/Timeline");
 
 // Show only pending pets in admin panel
 async function listPendingPets(req, res) {
@@ -54,8 +55,32 @@ async function rejectPet(req, res) {
   }
 }
 
+// Combined pet health history for admin (documents + vaccinations)
+async function listHealthHistory(req, res) {
+  try {
+    const { petId, type } = req.query;
+    const filter = {};
+    if (petId) filter.petId = petId;
+    if (type) filter.type = type;
+
+    const events = await Timeline.find(filter)
+      .populate({
+        path: "petId",
+        select: "name species owner",
+        populate: { path: "owner", select: "name email" }
+      })
+      .sort({ date: -1, createdAt: -1 });
+
+    return res.json(events);
+  } catch (err) {
+    console.error("List health history error:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+}
+
 module.exports = {
   listPendingPets,
   approvePet,
-  rejectPet
+  rejectPet,
+  listHealthHistory
 };

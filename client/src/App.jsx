@@ -6,6 +6,8 @@ import DocumentsPage from "./components/DocumentsPage";
 import VaccinationCampaignsPage from "./components/VaccinationCampaignsPage";
 import PetShopDetailsPage from "./components/PetShopDetailsPage";
 import RescuePage from "./components/RescuePage";
+import Timeline from "./components/Timeline";
+import Notifications from "./components/Notifications";
 import useDeletePet from "./hooks/useDeletePet";
 import { CartProvider, useCart } from "./cart/CartContext";
 import CartPage from "./cart/CartPage";
@@ -142,6 +144,8 @@ function Navbar({
           {user && <Link to="/profile" style={{ fontSize: 19 }}>Profile</Link>}
           {user && <Link to="/documents" style={{ fontSize: 19 }}>Documents</Link>}
           {user && <Link to="/vaccination-campaigns" style={{ fontSize: 19 }}>Vaccination Campaigns</Link>}
+          {user && <Link to="/notifications" style={{ fontSize: 19 }}>Notifications</Link>}
+          {user?.role === "admin" && <Link to="/admin" style={{ fontSize: 19 }}>Pet Health Timeline</Link>}
           {user && <Link to="/rescue" style={{ fontSize: 19 }}>Rescue System</Link>}
           {!user && <Link to="/signup" style={{ fontSize: 19 }}>Signup</Link>}
           {!user && <Link to="/login" style={{ fontSize: 19 }}>Login</Link>}
@@ -722,6 +726,22 @@ function PetDetails({ user, onRefresh }) {
             )}
           </div>
         )}
+
+        {user && (
+          <>
+            <hr style={{ margin: "16px 0" }} />
+            {isOwner || user.role === "admin" ? (
+              <Timeline petId={pet._id} canDelete={isOwner} />
+            ) : (
+              <div>
+                <h3>Pet Health Timeline</h3>
+                <div style={{ opacity: 0.85 }}>
+                  Timeline is visible to the pet owner or admin only.
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       </div>
@@ -1190,6 +1210,7 @@ function Profile({ user, onUserRefresh }) {
 /* ================= ADMIN PANEL ================= */
 function AdminPanel({ user, onRefresh }) {
   const [pending, setPending] = useState([]);
+  const [healthHistory, setHealthHistory] = useState([]);
   const [err, setErr] = useState("");
 
   async function loadPending() {
@@ -1204,7 +1225,17 @@ function AdminPanel({ user, onRefresh }) {
 
   useEffect(() => {
     loadPending();
+    loadHealthHistory();
   }, []);
+
+  async function loadHealthHistory() {
+    try {
+      const res = await api.get("/api/admin/health-history");
+      setHealthHistory(res.data || []);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load health history");
+    }
+  }
 
   async function approve(id) {
     try {
@@ -1230,58 +1261,101 @@ function AdminPanel({ user, onRefresh }) {
   if (user.role !== "admin") return <div className="card">Forbidden: Admin only.</div>;
 
   return (
-    <div className="card">
-      <h2>Admin Panel — Pending Posts</h2>
+    <div style={{ display: "grid", gap: 16 }}>
+      <div className="card">
+        <h2>Admin Panel — Pending Posts</h2>
 
-      {err && (
-        <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>
-          {err}
-        </div>
-      )}
+        {err && (
+          <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>
+            {err}
+          </div>
+        )}
 
-      {!pending.length && <div style={{ opacity: 0.8, marginTop: 10 }}>No pending posts.</div>}
+        {!pending.length && <div style={{ opacity: 0.8, marginTop: 10 }}>No pending posts.</div>}
 
-      {pending.map((p) => (
-        <div
-          key={p._id}
-          style={{ marginTop: 15, display: "flex", gap: 15, alignItems: "center" }}
-        >
-          <img
-            src={
-              p.imagePath
-                ? `http://localhost:5000${p.imagePath}`
-                : "https://placehold.co/240x180?text=Pet"
-            }
-            alt={p.name}
-            style={{ width: 220, height: 160, objectFit: "cover", borderRadius: 14 }}
-          />
+        {pending.map((p) => (
+          <div
+            key={p._id}
+            style={{ marginTop: 15, display: "flex", gap: 15, alignItems: "center" }}
+          >
+            <img
+              src={
+                p.imagePath
+                  ? `http://localhost:5000${p.imagePath}`
+                  : "https://placehold.co/240x180?text=Pet"
+              }
+              alt={p.name}
+              style={{ width: 220, height: 160, objectFit: "cover", borderRadius: 14 }}
+            />
 
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 900, fontSize: 18 }}>
-              {p.name} — {p.species}
-            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 900, fontSize: 18 }}>
+                {p.name} — {p.species}
+              </div>
 
-            <div style={{ opacity: 0.85 }}>
-              Owner: {p.owner?.name || "Unknown"}
-            </div>
+              <div style={{ opacity: 0.85 }}>
+                Owner: {p.owner?.name || "Unknown"}
+              </div>
 
-            <div style={{ opacity: 0.85 }}>
-              Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
-            </div>
+              <div style={{ opacity: 0.85 }}>
+                Sex: {p.sex || "Not specified"} • Age: {p.age ?? "Not specified"} • Price: {p.price ?? "Not specified"}
+              </div>
 
-            <div style={{ opacity: 0.9 }}>{p.description}</div>
+              <div style={{ opacity: 0.9 }}>{p.description}</div>
 
-            <div style={{ opacity: 0.7, fontSize: 13 }}>
-              Status: {p.approvalStatus}
-            </div>
+              <div style={{ opacity: 0.7, fontSize: 13 }}>
+                Status: {p.approvalStatus}
+              </div>
 
-            <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-              <button className="btn" onClick={() => approve(p._id)}>Approve</button>
-              <button className="btn secondary" onClick={() => reject(p._id)}>Reject</button>
+              <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
+                <button className="btn" onClick={() => approve(p._id)}>Approve</button>
+                <button className="btn secondary" onClick={() => reject(p._id)}>Reject</button>
+              </div>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="card">
+        <h2>Pet Health History (Documents + Vaccinations)</h2>
+        {!healthHistory.length && (
+          <div style={{ opacity: 0.8, marginTop: 10 }}>
+            No document or vaccination timeline records yet.
+          </div>
+        )}
+        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+          {healthHistory.map((event) => (
+            <div
+              key={event._id}
+              style={{
+                padding: 12,
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
+                borderRadius: 10,
+                background: "rgba(80, 113, 145, 0.92)",
+                border: "1px solid rgba(255, 255, 255, 0.18)"
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <b style={{ flex: "1 1 260px", minWidth: 0 }}>{event.title || "Untitled Event"}</b>
+                <span style={{ opacity: 0.8, flex: "0 0 auto", whiteSpace: "nowrap" }}>
+                  {event.type === "vaccination" ? "Vaccination" : "Document"}
+                </span>
+              </div>
+              <div style={{ marginTop: 4, opacity: 0.9, minWidth: 0 }}>
+                Pet: {event.petId?.name || "Unknown"} ({event.petId?.species || "Unknown"})
+              </div>
+              <div style={{ opacity: 0.85, minWidth: 0 }}>
+                Owner: {event.petId?.owner?.name || "Unknown"} ({event.petId?.owner?.email || "N/A"})
+              </div>
+              <div style={{ marginTop: 4, minWidth: 0 }}>{event.description || "No description"}</div>
+              <div style={{ marginTop: 6, opacity: 0.8, fontSize: 13 }}>
+                Date: {event.date ? new Date(event.date).toLocaleString() : "N/A"}
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 }
@@ -1382,6 +1456,7 @@ export default function App() {
             <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
             <Route path="/documents" element={<DocumentsPage user={user} />} />
             <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
+            <Route path="/notifications" element={<Notifications userId={user?._id} />} />
             <Route path="/rescue" element={<RescuePage user={user} />} />
             <Route path="/cart" element={<CartPage user={user} />} />
             <Route path="/admin" element={<AdminPanel user={user} onRefresh={loadPets} />} />

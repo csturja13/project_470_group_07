@@ -2,6 +2,7 @@ const VaccinationCampaign = require("../models/VaccinationCampaign");
 const VaccinationBooking = require("../models/VaccinationBooking");
 const Timeline = require("../models/Timeline");
 const Pet = require("../models/Pet");
+const notificationController = require("../controllers/notificationController");
 
 async function listCampaigns(req, res) {
   try {
@@ -177,6 +178,11 @@ async function bookCampaignAppointment(req, res) {
         date: new Date()
       });
     }
+
+    await notificationController.createNotification({
+      userId: req.user.userId,
+      message: `You have successfully registered to the campaign "${campaign.title}".`
+    });
 
     return res.status(201).json({
       message: "Appointment booked successfully",

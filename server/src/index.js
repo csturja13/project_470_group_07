@@ -22,8 +22,32 @@ const rescueRoutes = require("./routes/rescueRoutes");
 
 const app = express();
 
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN,
+  "http://localhost:5173",
+  "http://127.0.0.1:5173"
+].filter(Boolean);
+
+const corsOptions = {
+  credentials: true,
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+
+    const isExplicitAllowed = allowedOrigins.includes(origin);
+    const isLocalhostDev =
+      /^http:\/\/localhost:\d+$/.test(origin) ||
+      /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
+
+    if (isExplicitAllowed || isLocalhostDev) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  }
+};
+
 app.use(express.json());
-app.use(cors({ origin: process.env.CLIENT_ORIGIN, credentials: true }));
+app.use(cors(corsOptions));
 
 app.use("/api/admin", adminRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
@@ -46,7 +70,7 @@ app.use("/api/rescue", rescueRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: process.env.CLIENT_ORIGIN }
+  cors: corsOptions
 });
 
 io.on("connection", (socket) => {

@@ -3,12 +3,14 @@ import { api } from "../api";
 
 export default function VaccinationCampaignsPage({ user }) {
   const [campaigns, setCampaigns] = useState([]);
+  const [myPets, setMyPets] = useState([]);
   const [err, setErr] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterSpecies, setFilterSpecies] = useState("");
 
   const [selectedCampaignId, setSelectedCampaignId] = useState(null);
   const [bookingForm, setBookingForm] = useState({
+    petId: "",
     petName: "",
     animalType: "Dog",
     ownerPhone: "",
@@ -46,6 +48,25 @@ export default function VaccinationCampaignsPage({ user }) {
   useEffect(() => {
     loadCampaigns();
   }, [filterStatus, filterSpecies]);
+
+  useEffect(() => {
+    async function loadMyPets() {
+      if (!user) {
+        setMyPets([]);
+        return;
+      }
+
+      try {
+        const res = await api.get("/api/pets");
+        const ownedPets = (res.data || []).filter((p) => p?.owner?._id === user._id);
+        setMyPets(ownedPets);
+      } catch {
+        setMyPets([]);
+      }
+    }
+
+    loadMyPets();
+  }, [user?._id]);
 
   async function submitCampaign(e) {
     e.preventDefault();
@@ -86,6 +107,7 @@ export default function VaccinationCampaignsPage({ user }) {
     try {
       await api.post(`/api/vaccination-campaigns/${campaign._id}/book`, {
         ...bookingForm,
+        petId: bookingForm.petId || undefined,
         animalType:
           campaign.targetSpecies === "All"
             ? bookingForm.animalType
@@ -93,6 +115,7 @@ export default function VaccinationCampaignsPage({ user }) {
       });
 
       setBookingForm({
+        petId: "",
         petName: "",
         animalType: "Dog",
         ownerPhone: "",
@@ -292,6 +315,7 @@ export default function VaccinationCampaignsPage({ user }) {
                       selectedCampaignId === c._id ? null : c._id
                     );
                     setBookingForm({
+                      petId: "",
                       petName: "",
                       animalType:
                         c.targetSpecies === "All" ? "Dog" : c.targetSpecies,
@@ -316,6 +340,31 @@ export default function VaccinationCampaignsPage({ user }) {
                   borderRadius: 12
                 }}
               >
+                <select
+                  className="select"
+                  value={bookingForm.petId}
+                  onChange={(e) => {
+                    const selectedPetId = e.target.value;
+                    const selectedPet = myPets.find((p) => p._id === selectedPetId);
+                    setBookingForm({
+                      ...bookingForm,
+                      petId: selectedPetId,
+                      petName: selectedPet ? selectedPet.name : bookingForm.petName,
+                      animalType:
+                        selectedPet && c.targetSpecies === "All"
+                          ? selectedPet.species
+                          : bookingForm.animalType
+                    });
+                  }}
+                >
+                  <option value="">Select your pet (optional)</option>
+                  {myPets.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name} ({p.species})
+                    </option>
+                  ))}
+                </select>
+
                 <input
                   className="input"
                   placeholder="Pet Name"
