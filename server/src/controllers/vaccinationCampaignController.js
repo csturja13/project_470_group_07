@@ -213,6 +213,32 @@ async function listMyBookings(req, res) {
   }
 }
 
+async function listBookingsHistory(req, res) {
+  try {
+    if (req.user.role === "admin") {
+      const bookings = await VaccinationBooking.find({})
+        .populate("campaign")
+        .populate("user", "name email role")
+        .sort({ createdAt: -1 });
+
+      return res.json(bookings);
+    }
+
+    const bookings = await VaccinationBooking.find({
+      user: req.user.userId
+    })
+      .populate("campaign")
+      .sort({ createdAt: -1 });
+
+    return res.json(bookings);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message
+    });
+  }
+}
+
 async function cancelBooking(req, res) {
   try {
     const { bookingId } = req.params;
@@ -250,6 +276,7 @@ module.exports = {
   deleteCampaign,
   bookCampaignAppointment,
   listMyBookings,
+  listBookingsHistory,
   cancelBooking
 };
 

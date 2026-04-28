@@ -340,12 +340,6 @@ a:hover { color: white; }
   }
 }
 
-/* make navbar search look nice */
-.card input.input {
-  max-width: 520px;
-}
-
-
 /* ===== NAVBAR LAYOUT ===== */
 .navbarTop{
   display:flex;

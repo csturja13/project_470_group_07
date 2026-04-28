@@ -8,6 +8,7 @@ import PetShopDetailsPage from "./components/PetShopDetailsPage";
 import RescuePage from "./components/RescuePage";
 import Timeline from "./components/Timeline";
 import Notifications from "./components/Notifications";
+import HealthcareTimelinePage from "./components/HealthcareTimelinePage";
 import useDeletePet from "./hooks/useDeletePet";
 import { CartProvider, useCart } from "./cart/CartContext";
 import CartPage from "./cart/CartPage";
@@ -145,7 +146,8 @@ function Navbar({
           {user && <Link to="/documents" style={{ fontSize: 19 }}>Documents</Link>}
           {user && <Link to="/vaccination-campaigns" style={{ fontSize: 19 }}>Vaccination Campaigns</Link>}
           {user && <Link to="/notifications" style={{ fontSize: 19 }}>Notifications</Link>}
-          {user?.role === "admin" && <Link to="/admin" style={{ fontSize: 19 }}>Pet Health Timeline</Link>}
+          {user && <Link to="/healthcare-timeline" style={{ fontSize: 19 }}>Healthcare Timeline</Link>}
+          {user?.role === "admin" && <Link to="/admin" style={{ fontSize: 19 }}>Admin</Link>}
           {user && <Link to="/rescue" style={{ fontSize: 19 }}>Rescue System</Link>}
           {!user && <Link to="/signup" style={{ fontSize: 19 }}>Signup</Link>}
           {!user && <Link to="/login" style={{ fontSize: 19 }}>Login</Link>}
@@ -731,7 +733,7 @@ function PetDetails({ user, onRefresh }) {
           <>
             <hr style={{ margin: "16px 0" }} />
             {isOwner || user.role === "admin" ? (
-              <Timeline petId={pet._id} canDelete={isOwner} />
+              <Timeline petId={pet._id} canDelete={user?.role === "admin"} />
             ) : (
               <div>
                 <h3>Pet Health Timeline</h3>
@@ -1456,6 +1458,7 @@ export default function App() {
             <Route path="/profile" element={<Profile user={user} onUserRefresh={onUserRefresh} />} />
             <Route path="/documents" element={<DocumentsPage user={user} />} />
             <Route path="/vaccination-campaigns" element={<VaccinationCampaignsPage user={user} />} />
+            <Route path="/healthcare-timeline" element={<HealthcareTimelinePage user={user} />} />
             <Route path="/notifications" element={<Notifications userId={user?._id} />} />
             <Route path="/rescue" element={<RescuePage user={user} />} />
             <Route path="/cart" element={<CartPage user={user} />} />

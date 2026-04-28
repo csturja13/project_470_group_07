@@ -45,6 +45,27 @@ export default function VaccinationCampaignsPage({ user }) {
     }
   }
 
+  async function resetVaccinationOffersPage() {
+    setErr("");
+    setFilterStatus("");
+    setFilterSpecies("");
+    setSelectedCampaignId(null);
+    setBookingForm({
+      petId: "",
+      petName: "",
+      animalType: "Dog",
+      ownerPhone: "",
+      notes: ""
+    });
+
+    try {
+      const res = await api.get("/api/vaccination-campaigns");
+      setCampaigns(res.data);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load campaigns");
+    }
+  }
+
   useEffect(() => {
     loadCampaigns();
   }, [filterStatus, filterSpecies]);
@@ -165,7 +186,7 @@ export default function VaccinationCampaignsPage({ user }) {
             <option value="Cancelled">Cancelled</option>
           </select>
 
-          <button className="btn" onClick={loadCampaigns}>
+          <button className="btn" onClick={resetVaccinationOffersPage}>
             Refresh
           </button>
         </div>

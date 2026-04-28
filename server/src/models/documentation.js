@@ -17,6 +17,40 @@ const documentSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    fullName: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    residentialAddress: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    contactNumber: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    emailAddress: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    petType: {
+      type: String,
+      enum: ["Dog", "Cat", "Bird", "Other"],
+      default: "Other"
+    },
+    ownerSignature: {
+      type: String,
+      default: ""
+    },
+    specialtyDocuments: {
+      type: String,
+      default: "",
+      trim: true
+    },
     documentType: {
       type: String,
       enum: [

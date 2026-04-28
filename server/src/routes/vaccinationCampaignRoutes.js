@@ -6,6 +6,7 @@ const {
   deleteCampaign,
   bookCampaignAppointment,
   listMyBookings,
+  listBookingsHistory,
   cancelBooking
 } = require("../controllers/vaccinationCampaignController");
 const { requireAuth, requireRole } = require("../middlewares/auth");
@@ -15,6 +16,7 @@ router.get("/", listCampaigns);
 
 // User
 router.get("/my-bookings", requireAuth, listMyBookings);
+router.get("/bookings/history", requireAuth, listBookingsHistory);
 router.post("/:id/book", requireAuth, bookCampaignAppointment);
 router.delete("/booking/:bookingId", requireAuth, cancelBooking);
 

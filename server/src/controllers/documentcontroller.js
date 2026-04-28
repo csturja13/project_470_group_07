@@ -1,6 +1,4 @@
 const Document = require("../models/documentation");
-const Pet = require("../models/Pet");
-
 const Timeline = require("../models/Timeline");
 const notificationController = require("../controllers/notificationController");
 
@@ -8,52 +6,40 @@ const notificationController = require("../controllers/notificationController");
 async function createDocument(req, res) {
   try {
     const {
-      pet,
       title,
+      fullName,
+      residentialAddress,
+      contactNumber,
+      emailAddress,
+      petType,
+      ownerSignature,
+      specialtyDocuments,
       documentType,
-      documentNumber,
-      issuedBy,
-      issueDate,
-      expiryDate,
       notes
     } = req.body;
 
-    if (!title) {
-      return res.status(400).json({ message: "Title is required" });
+    if (!title || !fullName || !residentialAddress || !contactNumber || !emailAddress) {
+      return res.status(400).json({
+        message: "title, fullName, residentialAddress, contactNumber, emailAddress are required"
+      });
     }
-
-    if (pet) {
-      const existingPet = await Pet.findById(pet);
-      if (!existingPet) {
-        return res.status(404).json({ message: "Pet not found" });
-      }
-    }
-
-    const status =
-      expiryDate && new Date(expiryDate) < new Date() ? "Expired" : "Active";
 
     const document = await Document.create({
       owner: req.user.userId,
-      pet: pet || null,
+      pet: null,
       title,
+      fullName,
+      residentialAddress,
+      contactNumber,
+      emailAddress,
+      petType: petType || "Other",
+      ownerSignature: ownerSignature || "",
+      specialtyDocuments: specialtyDocuments || "",
       documentType,
-      documentNumber,
-      issuedBy,
-      issueDate: issueDate || null,
-      expiryDate: expiryDate || null,
+      issueDate: new Date(),
       notes,
-      status
+      status: "Active"
     });
-
-    if (pet) {
-      await Timeline.create({
-        petId: pet,
-        type: "document",
-        title: document.title,
-        description: document.notes,
-        date: document.issueDate || new Date()
-      });
-    }
 
     await notificationController.createNotification({
       userId: document.owner,
@@ -84,14 +70,39 @@ async function listMyDocuments(req, res) {
   }
 }
 
+async function listDocumentsHistory(req, res) {
+  try {
+    if (req.user.role === "admin") {
+      const documents = await Document.find({})
+        .populate("pet", "name species")
+        .populate("owner", "name email role")
+        .sort({ createdAt: -1 });
+
+      return res.json(documents);
+    }
+
+    const documents = await Document.find({ owner: req.user.userId })
+      .populate("pet", "name species")
+      .sort({ createdAt: -1 });
+
+    return res.json(documents);
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message
+    });
+  }
+}
+
 async function deleteDocument(req, res) {
   try {
     const { id } = req.params;
 
-    const document = await Document.findOne({
-      _id: id,
-      owner: req.user.userId
-    });
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Only admin can delete documents" });
+    }
+
+    const document = await Document.findById(id);
 
     if (!document) {
       return res.status(404).json({ message: "Document not found" });
@@ -112,5 +123,6 @@ async function deleteDocument(req, res) {
 module.exports = {
   createDocument,
   listMyDocuments,
+  listDocumentsHistory,
   deleteDocument
 };

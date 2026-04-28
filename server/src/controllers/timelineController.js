@@ -41,13 +41,8 @@ exports.deleteEvent = async (req, res) => {
       return res.status(404).json({ error: "Timeline event not found" });
     }
 
-    const pet = await Pet.findById(event.petId);
-    if (!pet) {
-      return res.status(404).json({ error: "Pet not found" });
-    }
-
-    if (pet.owner && pet.owner.toString() !== req.user.userId) {
-      return res.status(403).json({ error: "Unauthorized to delete this timeline event" });
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ error: "Only admin can delete timeline events" });
     }
 
     await Timeline.findByIdAndDelete(id);
