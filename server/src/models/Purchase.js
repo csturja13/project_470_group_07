@@ -8,7 +8,8 @@ const purchaseItemSchema = new mongoose.Schema(
     price: { type: Number, required: true, min: 0 },
     qty: { type: Number, required: true, min: 1 },
     lineTotal: { type: Number, required: true, min: 0 },
-    petId: { type: mongoose.Schema.Types.ObjectId, ref: "Pet", default: null }
+    petId: { type: mongoose.Schema.Types.ObjectId, ref: "Pet", default: null },
+    shopItemId: { type: mongoose.Schema.Types.ObjectId, ref: "ShopItem", default: null }
   },
   { _id: false }
 );

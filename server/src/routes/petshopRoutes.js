@@ -6,6 +6,7 @@ const Pet = require("../models/Pet");
 const ShopItem = require("../models/ShopItem");
 const Rating = require("../models/Rating");
 const { requireAuth } = require("../middlewares/auth");
+const { getRatings } = require("../controllers/ratingController");
 
 // list all pet shops
 router.get("/", async (req, res) => {
@@ -43,6 +44,15 @@ router.get("/:id/details", async (req, res) => {
     res.status(500).json({ message: "Failed to load shop details", error: err.message });
   }
 });
+
+router.get(
+  "/:id/ratings",
+  (req, res, next) => {
+    req.targetType = "petshop";
+    next();
+  },
+  getRatings
+);
 
 // rate a pet shop
 router.post("/:id/rate", requireAuth, async (req, res) => {

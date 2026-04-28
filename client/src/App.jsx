@@ -1057,13 +1057,12 @@ function Login({ onAuth }) {
 /* ================= PROFILE WITH RATINGS ================= */
 function Profile({ user, onUserRefresh }) {
   const [me, setMe] = useState(null);
-  const [users, setUsers] = useState([]);
   const [petshops, setPetshops] = useState([]);
-  const [selectedUser, setSelectedUser] = useState("");
+  const [receivedRatings, setReceivedRatings] = useState([]);
+  const [givenPetshopRatings, setGivenPetshopRatings] = useState([]);
+  const [givenRatingStats, setGivenRatingStats] = useState({ totalGiven: 0, averageGiven: 0 });
   const [selectedPetshop, setSelectedPetshop] = useState("");
-  const [userRating, setUserRating] = useState(5);
   const [petshopRating, setPetshopRating] = useState(5);
-  const [userReview, setUserReview] = useState("");
   const [petshopReview, setPetshopReview] = useState("");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -1071,16 +1070,32 @@ function Profile({ user, onUserRefresh }) {
   async function loadAll() {
     try {
       setErr("");
+      const meRes = await api.get("/api/auth/me");
+      const ratingsEndpoint =
+        meRes.data.role === "petshop"
+          ? `/api/petshops/${meRes.data._id}/ratings`
+          : `/api/users/${meRes.data._id}/ratings`;
+      const givenRatingsPromise =
+        meRes.data.role === "user"
+          ? api.get(`/api/users/${meRes.data._id}/given-ratings`)
+          : Promise.resolve({ data: { ratings: [], stats: { totalGiven: 0, averageGiven: 0 } } });
 
-      const [meRes, usersRes, petshopsRes] = await Promise.all([
-        api.get("/api/auth/me"),
-        api.get("/api/users"),
-        api.get("/api/petshops")
+      const [petshopsRes, ratingsRes, givenRatingsRes] = await Promise.all([
+        api.get("/api/petshops"),
+        api.get(ratingsEndpoint),
+        givenRatingsPromise
       ]);
 
       setMe(meRes.data);
-      setUsers(usersRes.data.filter((u) => u._id !== meRes.data._id));
       setPetshops(petshopsRes.data.filter((p) => p._id !== meRes.data._id));
+      setReceivedRatings(ratingsRes.data?.ratings || []);
+      setGivenPetshopRatings(givenRatingsRes.data?.ratings || []);
+      setGivenRatingStats(
+        givenRatingsRes.data?.stats || {
+          totalGiven: 0,
+          averageGiven: 0
+        }
+      );
 
       const updatedUser = {
         ...(user || {}),
@@ -1096,25 +1111,6 @@ function Profile({ user, onUserRefresh }) {
   useEffect(() => {
     if (user) loadAll();
   }, [user]);
-
-  async function submitUserRating(e) {
-    e.preventDefault();
-    setMsg("");
-    setErr("");
-
-    try {
-      await api.post(`/api/users/${selectedUser}/rate`, {
-        value: Number(userRating),
-        review: userReview
-      });
-      setMsg("User rating submitted");
-      setUserReview("");
-      setSelectedUser("");
-      await loadAll();
-    } catch (e) {
-      setErr(e?.response?.data?.message || "Failed to rate user");
-    }
-  }
 
   async function submitPetshopRating(e) {
     e.preventDefault();
@@ -1137,6 +1133,9 @@ function Profile({ user, onUserRefresh }) {
 
   if (!user) return <div className="card">Please login first.</div>;
 
+  const role = me?.role || user.role;
+  const canSubmitRatings = role === "user";
+
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <div className="card">
@@ -1148,117 +1147,113 @@ function Profile({ user, onUserRefresh }) {
         <div><b>Name:</b> {me?.name || user.name}</div>
         <div><b>Email:</b> {me?.email || user.email}</div>
         <div><b>Role:</b> {me?.role || user.role}</div>
-        <div><b>Average rating:</b> ⭐ {me?.averageRating ?? 0} / 5</div>
-        <div><b>Total ratings:</b> {me?.totalRatings ?? 0}</div>
+        {role === "petshop" ? (
+          <>
+            <div><b>Average rating:</b> ⭐ {me?.averageRating ?? 0} / 5</div>
+            <div><b>Total ratings:</b> {me?.totalRatings ?? 0}</div>
+          </>
+        ) : null}
       </div>
 
-      <div className="card">
-        <h2>Rate a User</h2>
+      {canSubmitRatings ? (
+        <>
+          <div className="card">
+            <h2>Rate a Pet Shop</h2>
 
-        {!users.length ? (
-          <div style={{ opacity: 0.8 }}>No users available.</div>
-        ) : (
-          <form onSubmit={submitUserRating} style={{ display: "grid", gap: 10 }}>
-            <select
-              className="input"
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              required
-            >
-              <option value="">Select user</option>
-              {users.map((u) => (
-                <option key={u._id} value={u._id}>
-                  {u.name} — ⭐ {u.averageRating || 0} ({u.totalRatings || 0})
-                </option>
-              ))}
-            </select>
+            {!petshops.length ? (
+              <div style={{ opacity: 0.8 }}>No pet shops available.</div>
+            ) : (
+              <form onSubmit={submitPetshopRating} style={{ display: "grid", gap: 10 }}>
+                <select
+                  className="input"
+                  value={selectedPetshop}
+                  onChange={(e) => setSelectedPetshop(e.target.value)}
+                  required
+                >
+                  <option value="">Select pet shop</option>
+                  {petshops.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name} — ⭐ {p.averageRating || 0} ({p.totalRatings || 0})
+                    </option>
+                  ))}
+                </select>
 
-            <select
-              className="input"
-              value={userRating}
-              onChange={(e) => setUserRating(e.target.value)}
-            >
-              <option value={1}>1 Star</option>
-              <option value={2}>2 Stars</option>
-              <option value={3}>3 Stars</option>
-              <option value={4}>4 Stars</option>
-              <option value={5}>5 Stars</option>
-            </select>
+                <select
+                  className="input"
+                  value={petshopRating}
+                  onChange={(e) => setPetshopRating(e.target.value)}
+                >
+                  <option value={1}>1 Star</option>
+                  <option value={2}>2 Stars</option>
+                  <option value={3}>3 Stars</option>
+                  <option value={4}>4 Stars</option>
+                  <option value={5}>5 Stars</option>
+                </select>
 
-            <textarea
-              className="input"
-              placeholder="Write review"
-              value={userReview}
-              onChange={(e) => setUserReview(e.target.value)}
-            />
+                <textarea
+                  className="input"
+                  placeholder="Write review"
+                  value={petshopReview}
+                  onChange={(e) => setPetshopReview(e.target.value)}
+                />
 
-            <button className="btn" type="submit">Submit User Rating</button>
-          </form>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>Rate a Pet Shop</h2>
-
-        {!petshops.length ? (
-          <div style={{ opacity: 0.8 }}>No pet shops available.</div>
-        ) : (
-          <form onSubmit={submitPetshopRating} style={{ display: "grid", gap: 10 }}>
-            <select
-              className="input"
-              value={selectedPetshop}
-              onChange={(e) => setSelectedPetshop(e.target.value)}
-              required
-            >
-              <option value="">Select pet shop</option>
-              {petshops.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name} — ⭐ {p.averageRating || 0} ({p.totalRatings || 0})
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="input"
-              value={petshopRating}
-              onChange={(e) => setPetshopRating(e.target.value)}
-            >
-              <option value={1}>1 Star</option>
-              <option value={2}>2 Stars</option>
-              <option value={3}>3 Stars</option>
-              <option value={4}>4 Stars</option>
-              <option value={5}>5 Stars</option>
-            </select>
-
-            <textarea
-              className="input"
-              placeholder="Write review"
-              value={petshopReview}
-              onChange={(e) => setPetshopReview(e.target.value)}
-            />
-
-            <button className="btn" type="submit">Submit Pet Shop Rating</button>
-          </form>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>Pet Shop Ratings</h2>
-
-        {!petshops.length ? (
-          <div style={{ opacity: 0.8 }}>No pet shops found.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {petshops.map((p) => (
-              <div key={p._id} className="badge" style={{ padding: 12 }}>
-                <div><b>{p.name}</b></div>
-                <div>⭐ {p.averageRating || 0} / 5</div>
-                <div>{p.totalRatings || 0} review(s)</div>
-              </div>
-            ))}
+                <button className="btn" type="submit">Submit Pet Shop Rating</button>
+              </form>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      ) : null}
+
+      {role === "petshop" ? (
+        <div className="card">
+          <h2>Ratings From Users</h2>
+
+          {!receivedRatings.length ? (
+            <div style={{ opacity: 0.8 }}>No ratings received yet.</div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {receivedRatings.map((rating) => (
+                <div key={rating._id} className="badge" style={{ padding: 12, borderRadius: 14 }}>
+                  <div>
+                    <b>{rating.rater?.name || "Unknown user"}</b>
+                  </div>
+                  <div>Role: {rating.rater?.role || "Unknown"}</div>
+                  <div>⭐ {rating.value} / 5</div>
+                  <div>{rating.review || "No written review"}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {canSubmitRatings ? (
+        <div className="card">
+          <h2>Ratings You Gave</h2>
+
+          <div style={{ marginBottom: 12 }}>
+            <div><b>Total ratings given:</b> {givenRatingStats.totalGiven ?? 0}</div>
+            <div><b>Average rating given:</b> ⭐ {givenRatingStats.averageGiven ?? 0} / 5</div>
+          </div>
+
+          {!givenPetshopRatings.length ? (
+            <div style={{ opacity: 0.8 }}>You have not rated any pet shop yet.</div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {givenPetshopRatings.map((rating) => (
+                <div key={rating._id} className="badge" style={{ padding: 12, borderRadius: 14 }}>
+                  <div>
+                    <b>{rating.target?.name || "Unknown pet shop"}</b>
+                  </div>
+                  <div>Role: {rating.target?.role || "petshop"}</div>
+                  <div>Your rating: ⭐ {rating.value} / 5</div>
+                  <div>{rating.review || "No written review"}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

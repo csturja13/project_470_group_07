@@ -11,6 +11,10 @@ function petIsPurchasable(p) {
   return style === "none";
 }
 
+function shopItemIsAvailable(item) {
+  return Number(item?.stock) > 0;
+}
+
 export default function PetShopDetailsPage({ user }) {
   const { id } = useParams();
   const nav = useNavigate();
@@ -22,6 +26,8 @@ export default function PetShopDetailsPage({ user }) {
   const [msg, setMsg] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutItems, setCheckoutItems] = useState([]);
+  const [stockDrafts, setStockDrafts] = useState({});
+  const [savingStockId, setSavingStockId] = useState("");
 
   const [itemForm, setItemForm] = useState({
     name: "",
@@ -123,6 +129,27 @@ export default function PetShopDetailsPage({ user }) {
       await loadShopDetails();
     } catch (e) {
       setErr(e?.response?.data?.message || "Failed to add pet");
+    }
+  }
+
+  async function updateItemStock(itemId) {
+    const nextStock = stockDrafts[itemId];
+    const normalizedStock = Math.max(0, Number(nextStock) || 0);
+
+    try {
+      setErr("");
+      setMsg("");
+      setSavingStockId(itemId);
+      await api.patch(`/api/shop-items/${itemId}`, { stock: normalizedStock });
+      setMsg(normalizedStock === 0 ? "Item marked as stock out" : "Item stock updated");
+      setItems((prev) =>
+        prev.map((item) => (item._id === itemId ? { ...item, stock: normalizedStock } : item))
+      );
+      setStockDrafts((prev) => ({ ...prev, [itemId]: String(normalizedStock) }));
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to update stock");
+    } finally {
+      setSavingStockId("");
     }
   }
 
@@ -410,10 +437,53 @@ export default function PetShopDetailsPage({ user }) {
                 <div className="petTitle">{item.name}</div>
                 <div className="petMeta">Category: {item.category}</div>
                 <div className="petMeta">Price: {item.price}</div>
-                <div className="petMeta">Stock: {item.stock}</div>
+                <div className="petMeta">
+                  {shopItemIsAvailable(item) ? `Stock: ${item.stock}` : "Stock Out"}
+                </div>
                 <div className="petMeta">{item.description}</div>
 
-                {canBuy && (
+                {isOwner ? (
+                  <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                    <input
+                      className="input"
+                      type="number"
+                      min={0}
+                      value={stockDrafts[item._id] ?? String(item.stock ?? 0)}
+                      onChange={(e) =>
+                        setStockDrafts((prev) => ({
+                          ...prev,
+                          [item._id]: e.target.value
+                        }))
+                      }
+                      placeholder="Set stock"
+                    />
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <button
+                        className="btn"
+                        type="button"
+                        disabled={savingStockId === item._id}
+                        onClick={() => updateItemStock(item._id)}
+                      >
+                        {savingStockId === item._id ? "Saving..." : "Update stock"}
+                      </button>
+                      <button
+                        className="btn secondary"
+                        type="button"
+                        disabled={savingStockId === item._id}
+                        onClick={() =>
+                          setStockDrafts((prev) => ({
+                            ...prev,
+                            [item._id]: "0"
+                          }))
+                        }
+                      >
+                        Mark Stock Out
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {canBuy && shopItemIsAvailable(item) ? (
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
                     <button
                       className="btn secondary"
@@ -458,7 +528,9 @@ export default function PetShopDetailsPage({ user }) {
                       Buy now
                     </button>
                   </div>
-                )}
+                ) : canBuy ? (
+                  <div className="stockOutPill">Stock Out</div>
+                ) : null}
               </div>
             ))}
           </div>

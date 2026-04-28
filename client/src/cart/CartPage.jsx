@@ -38,6 +38,7 @@ export default function CartPage({ user }) {
 
   const totalItems = items.reduce((sum, x) => sum + (Number(x.qty) || 0), 0);
   const subtotal = items.reduce((sum, x) => sum + toNumberPrice(x.price) * (Number(x.qty) || 0), 0);
+  const hasUnavailableItems = items.some((x) => x.kind === "shop_item" && Number(x.stock) <= 0);
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
@@ -68,7 +69,7 @@ export default function CartPage({ user }) {
             <button
               className="btn"
               type="button"
-              disabled={!items.length}
+              disabled={!items.length || hasUnavailableItems}
               onClick={() => {
                 setPurchaseKeys(items.map((x) => x.key));
                 setCheckoutItems(items);
@@ -87,6 +88,11 @@ export default function CartPage({ user }) {
         </div>
       ) : (
         <div className="card">
+          {hasUnavailableItems ? (
+            <div className="badge" style={{ marginBottom: 12, background: "rgba(255,0,0,0.15)" }}>
+              Some cart items are out of stock. Remove them before checkout.
+            </div>
+          ) : null}
           <div style={{ display: "grid", gap: 12 }}>
             {items.map((x) => (
               <div
@@ -116,7 +122,9 @@ export default function CartPage({ user }) {
                   </div>
                   <div style={{ opacity: 0.85, marginTop: 2 }}>
                     Price: <b>{x.price ?? "N/A"}</b>
-                    {x.stock != null ? ` • Stock: ${x.stock}` : ""}
+                    {x.stock != null
+                      ? ` • ${Number(x.stock) > 0 ? `Stock: ${x.stock}` : "Stock Out"}`
+                      : ""}
                   </div>
                 </div>
 
@@ -126,15 +134,16 @@ export default function CartPage({ user }) {
                       className="input"
                       type="number"
                       min={1}
-                      max={x.kind === "pet" ? 1 : undefined}
+                      max={x.kind === "pet" ? 1 : x.stock ?? undefined}
                       value={x.qty}
-                      disabled={x.kind === "pet"}
+                      disabled={x.kind === "pet" || (x.kind === "shop_item" && Number(x.stock) <= 0)}
                       onChange={(e) => setQty(x.key, e.target.value)}
                       style={{ width: 92, padding: "9px 10px" }}
                     />
                     <button
                       className="btn"
                       type="button"
+                      disabled={x.kind === "shop_item" && Number(x.stock) <= 0}
                       onClick={() => {
                         setPurchaseKeys([x.key]);
                         setCheckoutItems([x]);

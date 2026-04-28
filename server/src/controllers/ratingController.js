@@ -37,6 +37,15 @@ async function submitRating(req, res) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
+    const currentUser = await User.findById(req.user.userId).select("role");
+    if (!currentUser || currentUser.role !== "user") {
+      return res.status(403).json({ message: "Only normal users can submit ratings" });
+    }
+
+    if (targetType === "user") {
+      return res.status(403).json({ message: "Users cannot rate other users" });
+    }
+
     const numericValue = Number(value);
 
     if (!Number.isInteger(numericValue) || numericValue < 1 || numericValue > 5) {
@@ -54,10 +63,6 @@ async function submitRating(req, res) {
 
     if (targetType === "petshop" && targetUser.role !== "petshop") {
       return res.status(400).json({ message: "Target is not a pet shop" });
-    }
-
-    if (targetType === "user" && targetUser.role !== "user") {
-      return res.status(400).json({ message: "Target is not a normal user" });
     }
 
     const rating = await Rating.findOneAndUpdate(
@@ -118,6 +123,46 @@ async function getRatings(req, res) {
   }
 }
 
+async function getGivenRatings(req, res) {
+  try {
+    const { id } = req.params;
+
+    if (!req.user?.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (String(req.user.userId) !== String(id)) {
+      return res.status(403).json({ message: "You can only view your own given ratings" });
+    }
+
+    const rater = await User.findById(id).select("name role");
+    if (!rater) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const ratings = await Rating.find({ rater: id, targetType: "petshop" })
+      .populate("target", "name email role averageRating totalRatings")
+      .sort({ createdAt: -1 });
+
+    const totalGiven = ratings.length;
+    const averageGiven =
+      totalGiven > 0
+        ? Number((ratings.reduce((sum, rating) => sum + Number(rating.value || 0), 0) / totalGiven).toFixed(1))
+        : 0;
+
+    return res.json({
+      rater,
+      stats: {
+        totalGiven,
+        averageGiven
+      },
+      ratings
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to load given ratings", error: err.message });
+  }
+}
+
 async function listUsers(req, res) {
   try {
     const users = await User.find({ role: "user" })
@@ -145,6 +190,7 @@ async function listPetshops(req, res) {
 module.exports = {
   submitRating,
   getRatings,
+  getGivenRatings,
   listUsers,
   listPetshops
 };
