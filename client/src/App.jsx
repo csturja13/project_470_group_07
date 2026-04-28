@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter, Routes, Route, Link, useNavigate, useParams } from "react-router-dom";
+import { Component, useEffect, useMemo, useState } from "react";
+import { BrowserRouter, Routes, Route, Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import "./App.css";
 import { api, setAuthToken } from "./api";
 import DocumentsPage from "./components/DocumentsPage";
@@ -12,6 +12,45 @@ import HealthcareTimelinePage from "./components/HealthcareTimelinePage";
 import useDeletePet from "./hooks/useDeletePet";
 import { CartProvider, useCart } from "./cart/CartContext";
 import CartPage from "./cart/CartPage";
+import PetSoldOverlay from "./components/PetSoldOverlay";
+
+/** Catches render errors so one bad screen does not leave a blank gradient-only page */
+class RouteErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("Route render error:", error, info?.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="card">
+          <h2 style={{ marginTop: 0 }}>Something went wrong</h2>
+          <p style={{ opacity: 0.9 }}>{String(this.state.error?.message || this.state.error)}</p>
+          <p style={{ opacity: 0.75, fontSize: 14 }}>
+            Try refreshing the page. If this persists, open the browser developer console (F12) and check for errors.
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function RoutedSection({ children }) {
+  const location = useLocation();
+  return (
+    <RouteErrorBoundary key={location.pathname}>{children}</RouteErrorBoundary>
+  );
+}
 
 /* ================= AUTH HELPERS ================= */
 function saveAuth(token, user) {
@@ -227,14 +266,13 @@ function Navbar({
             </select>
           </div>
 
+          {!user && (
+            <div style={{ marginTop: 14, opacity: 0.9 }}>
+              Welcome to Pawlytics. Signup/Login to create pet posts.
+            </div>
+          )}
         </div>
       </div>
-
-      {!user && (
-        <div style={{ marginTop: 14, opacity: 0.9 }}>
-          Welcome to Pawlytics. Signup/Login to create pet posts.
-        </div>
-      )}
     </div>
   );
 }
@@ -242,15 +280,21 @@ function Navbar({
 function PetCard({ p }) {
   return (
     <div className="petCard" key={p._id}>
-      <img
-        className="petImg"
-        src={
-          p.imagePath
-            ? `http://localhost:5000${p.imagePath}`
-            : "https://placehold.co/600x400?text=Pet"
-        }
-        alt={p.name}
-      />
+      <div className="petImgWrap">
+        <img
+          className="petImg"
+          src={
+            p.imagePath
+              ? `http://localhost:5000${p.imagePath}`
+              : "https://placehold.co/600x400?text=Pet"
+          }
+          alt={p.name}
+        />
+        <PetSoldOverlay
+          soldBannerStyle={p.soldBannerStyle || "none"}
+          awaitingAdminSoldLabel={Boolean(p.awaitingAdminSoldLabel)}
+        />
+      </div>
 
       <div className="petTitle">
         {p.name} — {p.species}
@@ -534,7 +578,8 @@ function PetDetails({ user, onRefresh }) {
 
       if (res.data?.pendingRequest?._id) {
         const msgRes = await api.get(`/api/adoptions/${res.data.pendingRequest._id}/messages`);
-        setMessages(msgRes.data);
+        const list = msgRes.data;
+        setMessages(Array.isArray(list) ? list : []);
       } else {
         setMessages([]);
       }
@@ -556,10 +601,12 @@ function PetDetails({ user, onRefresh }) {
   useEffect(() => {
     if (!adoptionContext?.pendingRequest?._id) return undefined;
 
+    const pendingId = adoptionContext.pendingRequest._id;
     const timer = setInterval(async () => {
       try {
-        const msgRes = await api.get(`/api/adoptions/${adoptionContext.pendingRequest._id}/messages`);
-        setMessages(msgRes.data);
+        const msgRes = await api.get(`/api/adoptions/${pendingId}/messages`);
+        const list = msgRes.data;
+        setMessages(Array.isArray(list) ? list : []);
       } catch {
         // ignore polling errors and keep latest visible state
       }
@@ -568,17 +615,15 @@ function PetDetails({ user, onRefresh }) {
     return () => clearInterval(timer);
   }, [adoptionContext?.pendingRequest?._id]);
 
-  const isOwner = user && pet?.owner && pet.owner._id === user._id;
   const pendingRequest = adoptionContext?.pendingRequest || null;
   const myLatestRequest = adoptionContext?.myLatestRequest || null;
+  const safeMessages = Array.isArray(messages) ? messages : [];
+  const ownerId = pet?.owner?._id ?? pet?.owner;
+  const isOwner = !!(user && ownerId && String(ownerId) === String(user._id));
   const myPendingRequest =
     pendingRequest && pendingRequest.requester?._id === user?._id ? pendingRequest : null;
   const canRequestAdoption = !!(user && adoptionContext?.canRequest);
   const isBlockedForOthers = !!(user && !isOwner && pendingRequest && !myPendingRequest);
-
-  if (loading) return <div className="card">Loading pet details...</div>;
-  if (err) return <div className="card">{err}</div>;
-  if (!pet) return <div className="card">Pet not found.</div>;
 
   async function handleAdoptionRequest() {
     setChatErr("");
@@ -614,11 +659,16 @@ function PetDetails({ user, onRefresh }) {
       await api.post(`/api/adoptions/${pendingRequest._id}/messages`, { text: chatText });
       setChatText("");
       const msgRes = await api.get(`/api/adoptions/${pendingRequest._id}/messages`);
-      setMessages(msgRes.data);
+      const list = msgRes.data;
+      setMessages(Array.isArray(list) ? list : []);
     } catch (e2) {
       setChatErr(e2?.response?.data?.message || "Failed to send message");
     }
   }
+
+  if (loading) return <div className="card">Loading pet details...</div>;
+  if (err) return <div className="card">{err}</div>;
+  if (!pet) return <div className="card">Pet not found.</div>;
 
   return (
     <div className="card">
@@ -628,6 +678,7 @@ function PetDetails({ user, onRefresh }) {
 
       {/* LEFT SIDE */}
       <div className="petDetailsLeft">
+        <div className="petDetailsImgWrap">
         <img
         src={
             pet.imagePath
@@ -637,6 +688,11 @@ function PetDetails({ user, onRefresh }) {
         alt={pet.name}
         className="petDetailsImg"
         />
+        <PetSoldOverlay
+          soldBannerStyle={pet.soldBannerStyle || "none"}
+          awaitingAdminSoldLabel={Boolean(pet.awaitingAdminSoldLabel)}
+        />
+        </div>
         <div className="petDetailsActions">
           {canRequestAdoption && <button className="btn" onClick={handleAdoptionRequest}>Request to Adopt</button>}
           {isBlockedForOthers && (
@@ -696,11 +752,11 @@ function PetDetails({ user, onRefresh }) {
             </div>
 
             <div className="chatMessages">
-              {!messages.length && <div style={{ opacity: 0.8 }}>No messages yet.</div>}
-              {messages.map((m) => {
+              {!safeMessages.length && <div style={{ opacity: 0.8 }}>No messages yet.</div>}
+              {safeMessages.map((m) => {
                 const mine = m.sender?._id === user._id;
                 return (
-                  <div key={m._id} className={`chatMessage ${mine ? "mine" : ""}`}>
+                  <div key={m._id || String(m.createdAt)} className={`chatMessage ${mine ? "mine" : ""}`}>
                     <div className="chatSender">{m.sender?.name || "User"}</div>
                     <div>{m.text}</div>
                   </div>
@@ -733,7 +789,7 @@ function PetDetails({ user, onRefresh }) {
           <>
             <hr style={{ margin: "16px 0" }} />
             {isOwner || user.role === "admin" ? (
-              <Timeline petId={pet._id} canDelete={user?.role === "admin"} />
+              <Timeline petId={pet._id} canDelete={isOwner} />
             ) : (
               <div>
                 <h3>Pet Health Timeline</h3>
@@ -1003,13 +1059,12 @@ function Login({ onAuth }) {
 /* ================= PROFILE WITH RATINGS ================= */
 function Profile({ user, onUserRefresh }) {
   const [me, setMe] = useState(null);
-  const [users, setUsers] = useState([]);
   const [petshops, setPetshops] = useState([]);
-  const [selectedUser, setSelectedUser] = useState("");
+  const [receivedRatings, setReceivedRatings] = useState([]);
+  const [givenPetshopRatings, setGivenPetshopRatings] = useState([]);
+  const [givenRatingStats, setGivenRatingStats] = useState({ totalGiven: 0, averageGiven: 0 });
   const [selectedPetshop, setSelectedPetshop] = useState("");
-  const [userRating, setUserRating] = useState(5);
   const [petshopRating, setPetshopRating] = useState(5);
-  const [userReview, setUserReview] = useState("");
   const [petshopReview, setPetshopReview] = useState("");
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -1017,16 +1072,32 @@ function Profile({ user, onUserRefresh }) {
   async function loadAll() {
     try {
       setErr("");
+      const meRes = await api.get("/api/auth/me");
+      const ratingsEndpoint =
+        meRes.data.role === "petshop"
+          ? `/api/petshops/${meRes.data._id}/ratings`
+          : `/api/users/${meRes.data._id}/ratings`;
+      const givenRatingsPromise =
+        meRes.data.role === "user"
+          ? api.get(`/api/users/${meRes.data._id}/given-ratings`)
+          : Promise.resolve({ data: { ratings: [], stats: { totalGiven: 0, averageGiven: 0 } } });
 
-      const [meRes, usersRes, petshopsRes] = await Promise.all([
-        api.get("/api/auth/me"),
-        api.get("/api/users"),
-        api.get("/api/petshops")
+      const [petshopsRes, ratingsRes, givenRatingsRes] = await Promise.all([
+        api.get("/api/petshops"),
+        api.get(ratingsEndpoint),
+        givenRatingsPromise
       ]);
 
       setMe(meRes.data);
-      setUsers(usersRes.data.filter((u) => u._id !== meRes.data._id));
       setPetshops(petshopsRes.data.filter((p) => p._id !== meRes.data._id));
+      setReceivedRatings(ratingsRes.data?.ratings || []);
+      setGivenPetshopRatings(givenRatingsRes.data?.ratings || []);
+      setGivenRatingStats(
+        givenRatingsRes.data?.stats || {
+          totalGiven: 0,
+          averageGiven: 0
+        }
+      );
 
       const updatedUser = {
         ...(user || {}),
@@ -1042,25 +1113,6 @@ function Profile({ user, onUserRefresh }) {
   useEffect(() => {
     if (user) loadAll();
   }, [user]);
-
-  async function submitUserRating(e) {
-    e.preventDefault();
-    setMsg("");
-    setErr("");
-
-    try {
-      await api.post(`/api/users/${selectedUser}/rate`, {
-        value: Number(userRating),
-        review: userReview
-      });
-      setMsg("User rating submitted");
-      setUserReview("");
-      setSelectedUser("");
-      await loadAll();
-    } catch (e) {
-      setErr(e?.response?.data?.message || "Failed to rate user");
-    }
-  }
 
   async function submitPetshopRating(e) {
     e.preventDefault();
@@ -1083,6 +1135,9 @@ function Profile({ user, onUserRefresh }) {
 
   if (!user) return <div className="card">Please login first.</div>;
 
+  const role = me?.role || user.role;
+  const canSubmitRatings = role === "user";
+
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <div className="card">
@@ -1094,117 +1149,113 @@ function Profile({ user, onUserRefresh }) {
         <div><b>Name:</b> {me?.name || user.name}</div>
         <div><b>Email:</b> {me?.email || user.email}</div>
         <div><b>Role:</b> {me?.role || user.role}</div>
-        <div><b>Average rating:</b> ⭐ {me?.averageRating ?? 0} / 5</div>
-        <div><b>Total ratings:</b> {me?.totalRatings ?? 0}</div>
+        {role === "petshop" ? (
+          <>
+            <div><b>Average rating:</b> ⭐ {me?.averageRating ?? 0} / 5</div>
+            <div><b>Total ratings:</b> {me?.totalRatings ?? 0}</div>
+          </>
+        ) : null}
       </div>
 
-      <div className="card">
-        <h2>Rate a User</h2>
+      {canSubmitRatings ? (
+        <>
+          <div className="card">
+            <h2>Rate a Pet Shop</h2>
 
-        {!users.length ? (
-          <div style={{ opacity: 0.8 }}>No users available.</div>
-        ) : (
-          <form onSubmit={submitUserRating} style={{ display: "grid", gap: 10 }}>
-            <select
-              className="input"
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              required
-            >
-              <option value="">Select user</option>
-              {users.map((u) => (
-                <option key={u._id} value={u._id}>
-                  {u.name} — ⭐ {u.averageRating || 0} ({u.totalRatings || 0})
-                </option>
-              ))}
-            </select>
+            {!petshops.length ? (
+              <div style={{ opacity: 0.8 }}>No pet shops available.</div>
+            ) : (
+              <form onSubmit={submitPetshopRating} style={{ display: "grid", gap: 10 }}>
+                <select
+                  className="input"
+                  value={selectedPetshop}
+                  onChange={(e) => setSelectedPetshop(e.target.value)}
+                  required
+                >
+                  <option value="">Select pet shop</option>
+                  {petshops.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name} — ⭐ {p.averageRating || 0} ({p.totalRatings || 0})
+                    </option>
+                  ))}
+                </select>
 
-            <select
-              className="input"
-              value={userRating}
-              onChange={(e) => setUserRating(e.target.value)}
-            >
-              <option value={1}>1 Star</option>
-              <option value={2}>2 Stars</option>
-              <option value={3}>3 Stars</option>
-              <option value={4}>4 Stars</option>
-              <option value={5}>5 Stars</option>
-            </select>
+                <select
+                  className="input"
+                  value={petshopRating}
+                  onChange={(e) => setPetshopRating(e.target.value)}
+                >
+                  <option value={1}>1 Star</option>
+                  <option value={2}>2 Stars</option>
+                  <option value={3}>3 Stars</option>
+                  <option value={4}>4 Stars</option>
+                  <option value={5}>5 Stars</option>
+                </select>
 
-            <textarea
-              className="input"
-              placeholder="Write review"
-              value={userReview}
-              onChange={(e) => setUserReview(e.target.value)}
-            />
+                <textarea
+                  className="input"
+                  placeholder="Write review"
+                  value={petshopReview}
+                  onChange={(e) => setPetshopReview(e.target.value)}
+                />
 
-            <button className="btn" type="submit">Submit User Rating</button>
-          </form>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>Rate a Pet Shop</h2>
-
-        {!petshops.length ? (
-          <div style={{ opacity: 0.8 }}>No pet shops available.</div>
-        ) : (
-          <form onSubmit={submitPetshopRating} style={{ display: "grid", gap: 10 }}>
-            <select
-              className="input"
-              value={selectedPetshop}
-              onChange={(e) => setSelectedPetshop(e.target.value)}
-              required
-            >
-              <option value="">Select pet shop</option>
-              {petshops.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name} — ⭐ {p.averageRating || 0} ({p.totalRatings || 0})
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="input"
-              value={petshopRating}
-              onChange={(e) => setPetshopRating(e.target.value)}
-            >
-              <option value={1}>1 Star</option>
-              <option value={2}>2 Stars</option>
-              <option value={3}>3 Stars</option>
-              <option value={4}>4 Stars</option>
-              <option value={5}>5 Stars</option>
-            </select>
-
-            <textarea
-              className="input"
-              placeholder="Write review"
-              value={petshopReview}
-              onChange={(e) => setPetshopReview(e.target.value)}
-            />
-
-            <button className="btn" type="submit">Submit Pet Shop Rating</button>
-          </form>
-        )}
-      </div>
-
-      <div className="card">
-        <h2>Pet Shop Ratings</h2>
-
-        {!petshops.length ? (
-          <div style={{ opacity: 0.8 }}>No pet shops found.</div>
-        ) : (
-          <div style={{ display: "grid", gap: 10 }}>
-            {petshops.map((p) => (
-              <div key={p._id} className="badge" style={{ padding: 12 }}>
-                <div><b>{p.name}</b></div>
-                <div>⭐ {p.averageRating || 0} / 5</div>
-                <div>{p.totalRatings || 0} review(s)</div>
-              </div>
-            ))}
+                <button className="btn" type="submit">Submit Pet Shop Rating</button>
+              </form>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      ) : null}
+
+      {role === "petshop" ? (
+        <div className="card">
+          <h2>Ratings From Users</h2>
+
+          {!receivedRatings.length ? (
+            <div style={{ opacity: 0.8 }}>No ratings received yet.</div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {receivedRatings.map((rating) => (
+                <div key={rating._id} className="badge" style={{ padding: 12, borderRadius: 14 }}>
+                  <div>
+                    <b>{rating.rater?.name || "Unknown user"}</b>
+                  </div>
+                  <div>Role: {rating.rater?.role || "Unknown"}</div>
+                  <div>⭐ {rating.value} / 5</div>
+                  <div>{rating.review || "No written review"}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {canSubmitRatings ? (
+        <div className="card">
+          <h2>Ratings You Gave</h2>
+
+          <div style={{ marginBottom: 12 }}>
+            <div><b>Total ratings given:</b> {givenRatingStats.totalGiven ?? 0}</div>
+            <div><b>Average rating given:</b> ⭐ {givenRatingStats.averageGiven ?? 0} / 5</div>
+          </div>
+
+          {!givenPetshopRatings.length ? (
+            <div style={{ opacity: 0.8 }}>You have not rated any pet shop yet.</div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              {givenPetshopRatings.map((rating) => (
+                <div key={rating._id} className="badge" style={{ padding: 12, borderRadius: 14 }}>
+                  <div>
+                    <b>{rating.target?.name || "Unknown pet shop"}</b>
+                  </div>
+                  <div>Role: {rating.target?.role || "petshop"}</div>
+                  <div>Your rating: ⭐ {rating.value} / 5</div>
+                  <div>{rating.review || "No written review"}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1212,8 +1263,11 @@ function Profile({ user, onUserRefresh }) {
 /* ================= ADMIN PANEL ================= */
 function AdminPanel({ user, onRefresh }) {
   const [pending, setPending] = useState([]);
+  const [pendingSales, setPendingSales] = useState([]);
   const [healthHistory, setHealthHistory] = useState([]);
+  const [commerceStats, setCommerceStats] = useState(null);
   const [err, setErr] = useState("");
+  const [info, setInfo] = useState("");
 
   async function loadPending() {
     setErr("");
@@ -1227,7 +1281,9 @@ function AdminPanel({ user, onRefresh }) {
 
   useEffect(() => {
     loadPending();
+    loadPendingSales();
     loadHealthHistory();
+    loadCommerceStats();
   }, []);
 
   async function loadHealthHistory() {
@@ -1259,6 +1315,38 @@ function AdminPanel({ user, onRefresh }) {
     }
   }
 
+  async function loadCommerceStats() {
+    try {
+      const res = await api.get("/api/admin/commerce-stats");
+      setCommerceStats(res.data);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load commerce stats");
+    }
+  }
+
+  async function loadPendingSales() {
+    try {
+      const res = await api.get("/api/admin/pets/pending-sales");
+      setPendingSales(res.data || []);
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to load pending pet sales");
+    }
+  }
+
+  async function markSoldBanner(petId, mode) {
+    setErr("");
+    setInfo("");
+    try {
+      await api.patch(`/api/admin/pets/${petId}/sold-banner`, { mode });
+      setInfo("Listing updated.");
+      await loadPendingSales();
+      await loadCommerceStats();
+      onRefresh?.();
+    } catch (e) {
+      setErr(e?.response?.data?.message || "Failed to update listing");
+    }
+  }
+
   if (!user) return <div className="card">Please login as admin.</div>;
   if (user.role !== "admin") return <div className="card">Forbidden: Admin only.</div>;
 
@@ -1270,6 +1358,11 @@ function AdminPanel({ user, onRefresh }) {
         {err && (
           <div className="badge" style={{ background: "rgba(255,0,0,0.15)" }}>
             {err}
+          </div>
+        )}
+        {info && (
+          <div className="badge" style={{ background: "rgba(0,255,120,0.15)" }}>
+            {info}
           </div>
         )}
 
@@ -1316,6 +1409,109 @@ function AdminPanel({ user, onRefresh }) {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="card">
+        <h2>Buy/Sell Statistics</h2>
+        {!commerceStats ? (
+          <div style={{ opacity: 0.8, marginTop: 10 }}>Loading commerce stats...</div>
+        ) : (
+          <div style={{ display: "grid", gap: 10 }}>
+            <div>Total Orders: <b>{commerceStats.totals?.totalOrders || 0}</b></div>
+            <div>Total Items Sold: <b>{commerceStats.totals?.totalItems || 0}</b></div>
+            <div>Subtotal Sales: <b>{Number(commerceStats.totals?.subtotalSales || 0).toFixed(2)}</b></div>
+            <div>Delivery Collected: <b>{Number(commerceStats.totals?.deliveryCollected || 0).toFixed(2)}</b></div>
+            <div>Net Revenue: <b>{Number(commerceStats.totals?.netSales || 0).toFixed(2)}</b></div>
+
+            <div style={{ marginTop: 8 }}>
+              <b>Recent Purchases</b>
+            </div>
+            {!commerceStats.recentOrders?.length ? (
+              <div style={{ opacity: 0.8 }}>No purchase records yet.</div>
+            ) : (
+              <div style={{ display: "grid", gap: 8 }}>
+                {commerceStats.recentOrders.map((order) => (
+                  <div key={order._id} className="badge" style={{ padding: 10 }}>
+                    <div><b>{order.transactionId}</b></div>
+                    <div>{order.payerName} • {order.paymentMethod}</div>
+                    <div>Amount: {Number(order.totalAmount || 0).toFixed(2)}</div>
+                    <div style={{ opacity: 0.8, fontSize: 13 }}>
+                      {new Date(order.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Pet purchases — sold label</h2>
+        <div style={{ opacity: 0.85, marginTop: 6, marginBottom: 12 }}>
+          After a buyer pays for a pet, it appears here. Choose how the listing should look on the site.
+        </div>
+        {!pendingSales.length ? (
+          <div style={{ opacity: 0.8 }}>No pets waiting for a sold label.</div>
+        ) : (
+          <div style={{ display: "grid", gap: 16 }}>
+            {pendingSales.map((p) => (
+              <div
+                key={p._id}
+                style={{
+                  display: "flex",
+                  gap: 16,
+                  flexWrap: "wrap",
+                  alignItems: "flex-start",
+                  paddingBottom: 16,
+                  borderBottom: "1px solid rgba(255,255,255,0.1)"
+                }}
+              >
+                <div className="petImgWrap" style={{ width: 200, flexShrink: 0 }}>
+                  <img
+                    className="petImg"
+                    style={{ height: 140 }}
+                    src={
+                      p.imagePath
+                        ? `http://localhost:5000${p.imagePath}`
+                        : "https://placehold.co/240x180?text=Pet"
+                    }
+                    alt={p.name}
+                  />
+                  <PetSoldOverlay
+                    soldBannerStyle="none"
+                    awaitingAdminSoldLabel={Boolean(p.awaitingAdminSoldLabel)}
+                  />
+                </div>
+                <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, fontSize: 18 }}>
+                    {p.name} — {p.species}
+                  </div>
+                  <div style={{ opacity: 0.85, marginTop: 6 }}>
+                    Owner: {p.owner?.name || "Unknown"} • Price: {p.price ?? "—"}
+                  </div>
+                  <div style={{ opacity: 0.9, marginTop: 8 }}>{p.description}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => markSoldBanner(p._id, "no_delivery_discount")}
+                    >
+                      Sold without delivery discount
+                    </button>
+                    <button
+                      type="button"
+                      className="btn secondary"
+                      onClick={() => markSoldBanner(p._id, "free_delivery")}
+                    >
+                      Sold with free delivery
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card">

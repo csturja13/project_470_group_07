@@ -55,6 +55,18 @@ const petSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null
+    },
+
+    awaitingAdminSoldLabel: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+
+    soldBannerStyle: {
+      type: String,
+      enum: ["none", "no_delivery_discount", "free_delivery"],
+      default: "none"
     }
   },
   { timestamps: true }

@@ -18,6 +18,7 @@ const timelineRoutes = require("./routes/timelineRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const adoptionRoutes = require("./routes/adoptionRoutes");
 const rescueRoutes = require("./routes/rescueRoutes");
+const commerceRoutes = require("./routes/commerceRoutes");
 
 
 const app = express();
@@ -67,6 +68,7 @@ app.use("/api/timeline", timelineRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/adoptions", adoptionRoutes);
 app.use("/api/rescue", rescueRoutes);
+app.use("/api/commerce", commerceRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {

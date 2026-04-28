@@ -8,6 +8,7 @@ function toCartKey({ kind, id }) {
 }
 
 function clampQty(qty, { min = 1, max = Infinity } = {}) {
+  if (max < min) return max;
   const n = Number(qty);
   if (!Number.isFinite(n)) return min;
   return Math.max(min, Math.min(max, Math.round(n)));
@@ -31,6 +32,8 @@ export function CartProvider({ children }) {
           : product.stock != null && Number.isFinite(Number(product.stock))
             ? Math.max(0, Number(product.stock))
             : Infinity;
+
+      if (maxQty < 1) return;
 
       setItems((prev) => {
         const existing = prev.find((x) => x.key === key);
