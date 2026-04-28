@@ -449,3 +449,5 @@ export default function VaccinationCampaignsPage({ user }) {
     </div>
   );
 }
+
+
