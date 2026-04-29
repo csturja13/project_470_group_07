@@ -41,6 +41,7 @@ export default function RescuePage({ user }) {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
+  const [allRescuerRequests, setAllRescuerRequests] = useState([]);
 
   const selected = useMemo(
     () => requests.find((r) => r._id === selectedId) || null,
@@ -48,9 +49,21 @@ export default function RescuePage({ user }) {
   );
   const isRequesterView = accessRole === "requester";
   const isRescuerView = accessRole === "rescuer";
+  const visibleRescuerRequests = useMemo(() => {
+    if (!isRescuerView) return requests;
+    if (statusFilter === "All") return allRescuerRequests;
+    if (statusFilter === "Open") {
+      // Keep active jobs visible: newly taken requests become In Progress.
+      return allRescuerRequests.filter(
+        (r) => r.status === "Open" || r.status === "In Progress"
+      );
+    }
+    return allRescuerRequests.filter((r) => r.status === statusFilter);
+  }, [isRescuerView, requests, allRescuerRequests, statusFilter]);
+
   const mapRequests = useMemo(
-    () => requests.filter((r) => r.status !== "Resolved"),
-    [requests]
+    () => visibleRescuerRequests.filter((r) => r.status !== "Resolved"),
+    [visibleRescuerRequests]
   );
 
   async function loadRequests() {
@@ -62,14 +75,29 @@ export default function RescuePage({ user }) {
         ? await api.get("/api/rescue/mine")
         : await api.get("/api/rescue", {
             params: {
-              status: statusFilter,
+              status: "All",
               lat: center.lat,
               lng: center.lng,
               radiusKm
             }
           });
-      setRequests(res.data);
-      if (selectedId && !res.data.some((r) => r._id === selectedId)) {
+
+      if (isRequesterView) {
+        setRequests(res.data);
+      } else {
+        setAllRescuerRequests(res.data);
+      }
+
+      const nextVisible = isRequesterView
+        ? res.data
+        : (statusFilter === "All"
+            ? res.data
+            : statusFilter === "Open"
+              ? res.data.filter((r) => r.status === "Open" || r.status === "In Progress")
+              : res.data.filter((r) => r.status === statusFilter));
+      setRequests(nextVisible);
+
+      if (selectedId && !nextVisible.some((r) => r._id === selectedId)) {
         setSelectedId("");
         setRoutePoints([]);
       }
@@ -355,7 +383,11 @@ export default function RescuePage({ user }) {
                   key={r._id}
                   center={[r.location.lat, r.location.lng]}
                   radius={130}
-                  pathOptions={{ color: "red", fillColor: "red", fillOpacity: 0.34 }}
+                  pathOptions={{
+                    color: r.assignedRescuer ? "#22c55e" : "red",
+                    fillColor: r.assignedRescuer ? "#22c55e" : "red",
+                    fillOpacity: 0.34
+                  }}
                   eventHandlers={{ click: () => buildRoutePreview(r) }}
                 >
                   <Popup>
@@ -380,6 +412,17 @@ export default function RescuePage({ user }) {
                           Taken by: {r.assignedRescuer?.name || "Another rescuer"}
                         </span>
                       )}
+                      {isRescuerView &&
+                        r.assignedRescuer?._id === user?._id &&
+                        r.status !== "Resolved" && (
+                        <button
+                          className="btn secondary"
+                          onClick={() => updateStatus(r._id, "Resolved")}
+                          style={{ width: "100%" }}
+                        >
+                          Mark Finished
+                        </button>
+                      )}
                     </div>
                   </Popup>
                 </Circle>
@@ -401,9 +444,9 @@ export default function RescuePage({ user }) {
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>{isRequesterView ? "Rescue Requests" : "Nearby Rescue Requests"}</h3>
-        {!requests.length && <div style={{ opacity: 0.8 }}>No rescue requests found in selected area.</div>}
+        {!visibleRescuerRequests.length && <div style={{ opacity: 0.8 }}>No rescue requests found in selected area.</div>}
         <div style={{ display: "grid", gap: 10 }}>
-          {requests.map((r) => {
+          {visibleRescuerRequests.map((r) => {
             const assignedToMe = r.assignedRescuer?._id === user._id;
             const postedByMe = r.postedBy?._id === user._id;
             const canRequesterRemove = postedByMe && !r.assignedRescuer;
