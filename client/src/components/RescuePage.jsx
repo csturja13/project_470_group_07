@@ -363,7 +363,10 @@ export default function RescuePage({ user }) {
                       <b>{r.title}</b>
                       <span>Status: {r.status}</span>
                       <span>Distance: {fmtDistance(r.distanceKm)}</span>
-                      {isRescuerView && r.status !== "Resolved" && !r.assignedRescuer && (
+                      {isRescuerView &&
+                        r.postedBy?._id !== user?._id &&
+                        r.status !== "Resolved" &&
+                        !r.assignedRescuer && (
                         <button
                           className="btn"
                           onClick={() => assignRequest(r._id)}
@@ -404,6 +407,8 @@ export default function RescuePage({ user }) {
             const assignedToMe = r.assignedRescuer?._id === user._id;
             const postedByMe = r.postedBy?._id === user._id;
             const canRequesterRemove = postedByMe && !r.assignedRescuer;
+            const canTakeRequest =
+              isRescuerView && !postedByMe && r.status !== "Resolved" && !r.assignedRescuer;
             return (
               <div key={r._id} className="badge" style={{ borderRadius: 12, padding: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -421,7 +426,7 @@ export default function RescuePage({ user }) {
                 <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {isRescuerView && <button className="btn" onClick={() => buildRoutePreview(r)}>Preview Path</button>}
 
-                  {isRescuerView && r.status !== "Resolved" && !r.assignedRescuer && (
+                  {canTakeRequest && (
                     <button className="btn" onClick={() => assignRequest(r._id)}>Take Request</button>
                   )}
 

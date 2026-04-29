@@ -111,6 +111,10 @@ exports.assignRequest = async (req, res) => {
     const rescue = await RescueRequest.findById(req.params.id);
     if (!rescue) return res.status(404).json({ message: "Rescue request not found" });
 
+    if (rescue.postedBy.toString() === req.user.userId) {
+      return res.status(403).json({ message: "You cannot take your own rescue request" });
+    }
+
     if (rescue.status === "Resolved") {
       return res.status(400).json({ message: "Resolved request cannot be assigned" });
     }
